@@ -1,0 +1,2143 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Jogo de Python intermediário: funções, dicionários, classes, exceções, recursão, geradores e algoritmos pilotando um submarino no fundo do mar.">
+<meta name="theme-color" content="#03141e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Abissal">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>Expedição Abissal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,600;0,6..12,700;1,6..12,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: cabine do ARGO — briefing + editor à esquerda, janela de sonar fixa à direita.
+   Visual único e escuro (fundo do mar com bioluminescência), escolhido de propósito. */
+:root{
+  color-scheme: dark;
+  --bg:#03141e; --panel:#062433; --panel-2:#0a3043; --ink:#dcf3f1; --ink-soft:#84adb3; --line:#13445a;
+  --water:#0a3a50; --water-2:#0c4159; --caustic:rgba(120,235,230,.07); --rock:#1d2a33; --rock-hi:#3a5463; --rock-lo:#121c23;
+  --gold:#f5c451; --bubble:#bff3ff; --current:#5fe6da; --jelly:#e46cff; --eel:#9dff7a;
+  --key-a:#ff9f6e; --key-b:#7ee0a1; --key-c:#c99bff;
+  --accent:#ff7b5c; --accent-ink:#2a0c04; --cool:#48e5d6; --mark:#ffe066;
+  --code-bg:#02101a; --code-fg:#d9f1ef; --code-dim:#6f949b; --key:#0b2b3b;
+  --ok:#7ee0a1; --ok-bg:#0d3326; --err:#ff9c8a; --err-bg:#3a1714; --star:#ffd166; --star-off:#244a5a;
+  --f-display:"Chakra Petch", "Trebuchet MS", system-ui, sans-serif;
+  --f-body:"Nunito Sans", "Segoe UI", system-ui, sans-serif;
+  --f-code:"JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{background:radial-gradient(1000px 380px at 80% -140px, #0c4a5e 0%, transparent 65%), radial-gradient(600px 300px at 0% 0%, #082f40 0%, transparent 70%), var(--bg);background-color:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55;min-height:100vh}
+button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+a{color:var(--cool)}
+:focus-visible{outline:3px solid var(--cool);outline-offset:2px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:1340px;margin:0 auto;padding-block:14px 4px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.logo{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:700;font-size:1.55rem;letter-spacing:.04em;text-transform:uppercase;line-height:1}
+.logo div{white-space:nowrap}
+.logo small{display:block;font-family:var(--f-body);font-weight:600;font-size:.7rem;letter-spacing:.16em;color:var(--ink-soft);margin-top:3px}
+.logo svg{width:42px;height:42px;flex:none}
+.top-r{display:flex;align-items:center;gap:8px}
+.pill{display:flex;align-items:center;gap:6px;white-space:nowrap;border:1.5px solid var(--line);background:var(--panel);border-radius:99px;padding:6px 12px;font-weight:700;font-size:.9rem;font-variant-numeric:tabular-nums}
+.pill .st{color:var(--star)}
+.btn{border:1.5px solid var(--line);background:var(--panel-2);border-radius:10px;padding:9px 16px;font-weight:700;font-size:.92rem;min-height:42px;color:var(--ink)}
+.btn:hover{border-color:var(--ink-soft)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{border-color:transparent;background:none;color:var(--ink-soft);font-weight:600}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.wrap{max-width:1340px;margin:0 auto;padding-block:10px 40px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.game{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"mission board" "editor board";gap:16px;align-items:start}
+.card{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;min-width:0}
+.mission{grid-area:mission;padding:20px 22px}
+.boardcard{grid-area:board;position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);padding:14px;display:flex;flex-direction:column;gap:10px}
+.edcol{grid-area:editor;display:flex;flex-direction:column;gap:10px;min-width:0}
+.eyebrow{font-family:var(--f-display);font-weight:600;font-size:.82rem;letter-spacing:.14em;text-transform:uppercase;color:var(--cool)}
+.eyebrow .depth{color:var(--ink-soft);margin-left:6px}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(1.7rem,3vw,2.3rem);line-height:1.05;margin:6px 0 12px;letter-spacing:.01em;text-wrap:balance}
+.mission p{margin:0 0 10px;max-width:64ch}
+.mission code,.ref code{font-family:var(--f-code);font-size:.84em;background:var(--panel-2);padding:1px 5px;border-radius:4px;color:var(--ink)}
+.mission pre,.ref pre{background:var(--code-bg);color:var(--code-fg);font-family:var(--f-code);font-size:.82rem;border-radius:10px;padding:10px 14px;margin:0 0 12px;overflow-x:auto;border:1px solid var(--line)}
+.task{background:linear-gradient(135deg,#2c1410,#1d0e0b);border:1.5px solid var(--accent);border-radius:12px;padding:12px 14px;margin:6px 0 4px}
+.task strong{display:block;font-family:var(--f-display);text-transform:uppercase;letter-spacing:.12em;font-size:.8rem;color:var(--accent);margin-bottom:4px}
+.task p{margin:0}
+details.ref{margin-top:12px;border:1.5px solid var(--line);border-radius:12px;background:var(--panel-2)}
+details.ref summary{cursor:pointer;padding:10px 14px;font-family:var(--f-display);font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-size:.85rem;color:var(--ink-soft);list-style:none}
+details.ref summary::-webkit-details-marker{display:none}
+details.ref summary::before{content:"▸ ";color:var(--cool)}
+details.ref[open] summary::before{content:"▾ "}
+.refbody{padding:0 14px 12px;display:flex;flex-direction:column;gap:10px;font-size:.88rem}
+.refbody pre{margin:4px 0 0}
+.reftab{display:grid;grid-template-columns:auto auto 1fr;gap:4px 10px;align-items:baseline;margin-top:4px}
+.reftab code{white-space:nowrap}
+.reftab span.t{font-family:var(--f-code);font-size:.76rem;color:var(--cool)}
+.acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.acts span{font-family:var(--f-code);font-size:.8rem;border:1px solid var(--line);border-radius:6px;padding:2px 7px;background:var(--panel)}
+.goal{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.85rem;color:var(--ink-soft);margin-top:10px}
+.goal b{color:var(--ink)}
+
+/* editor */
+.editor{background:var(--code-bg);border-radius:14px;overflow:hidden;border:1.5px solid var(--line)}
+.ed-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px 9px 16px;border-bottom:1px solid var(--line);color:var(--code-dim);font-family:var(--f-code);font-size:.78rem}
+.ed-body{display:grid;grid-template-columns:42px 1fr;min-height:260px;max-height:62vh;overflow:auto}
+.gutter{padding:12px 8px 12px 0;text-align:right;font-family:var(--f-code);font-size:.86rem;line-height:1.6;color:#3f6670;user-select:none;white-space:pre;font-variant-numeric:tabular-nums}
+#code{background:transparent;color:var(--code-fg);border:0;resize:none;outline:none;padding:12px 12px 12px 10px;font-family:var(--f-code);font-size:.86rem;line-height:1.6;white-space:pre;overflow:hidden;tab-size:4;caret-color:var(--accent);min-height:260px;width:100%}
+.keys{display:flex;gap:6px;overflow-x:auto;padding:8px;border-top:1px solid var(--line);scrollbar-width:none}
+.keys::-webkit-scrollbar{display:none}
+.keys button{flex:0 0 auto;min-width:40px;height:40px;padding:0 10px;border:0;border-radius:8px;background:var(--key);color:var(--code-fg);font-family:var(--f-code);font-size:.88rem}
+.keys button:active{background:var(--line)}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.speed{display:flex;border:1.5px solid var(--line);border-radius:10px;overflow:hidden;margin-left:auto}
+.speed button{border:0;background:var(--panel);padding:8px 10px;font-size:.8rem;font-weight:700;color:var(--ink-soft)}
+.speed button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.feedback{border-radius:12px;padding:12px 14px;font-size:.93rem;display:flex;flex-direction:column;gap:6px;overflow-wrap:anywhere}
+.feedback.ok{background:var(--ok-bg);color:var(--ok);border:1.5px solid var(--ok)}
+.feedback.bad{background:var(--err-bg);color:var(--err);border:1.5px solid var(--err)}
+.feedback b{font-family:var(--f-display);font-size:1.02rem;letter-spacing:.06em;text-transform:uppercase}
+.feedback .row{display:flex;gap:8px;flex-wrap:wrap}
+.feedback .btn{font-size:.85rem;padding:6px 12px;min-height:36px}
+.hint{color:var(--ink);background:var(--panel);border-radius:8px;padding:8px 10px;font-size:.86rem;white-space:pre-wrap}
+.solution{background:var(--code-bg);color:var(--code-fg);border-radius:8px;padding:10px 12px;font-family:var(--f-code);font-size:.8rem;white-space:pre;overflow-x:auto;margin:0;border:1px solid var(--line);max-height:360px}
+
+/* sonar */
+.bhead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:.82rem;color:var(--ink-soft);font-variant-numeric:tabular-nums;font-family:var(--f-code)}
+.bhead b{color:var(--ink)}
+.o2{display:inline-flex;align-items:center;gap:4px}
+.o2 i{display:inline-block;width:46px;height:9px;border:1.5px solid var(--ink-soft);border-radius:5px;position:relative;overflow:hidden}
+.o2 i::after{content:"";position:absolute;inset:0;width:var(--b,100%);background:var(--bubble);transition:width .2s}
+.o2.low i::after{background:var(--accent)}
+.maps{display:flex;gap:6px;flex-wrap:wrap}
+.maps button{border:1.5px solid var(--line);background:var(--panel-2);border-radius:8px;padding:3px 9px;font-size:.76rem;font-weight:700;color:var(--ink-soft)}
+.maps button[aria-current="true"]{border-color:var(--ink);color:var(--ink)}
+.maps button.ok{border-color:var(--ok);color:var(--ok);background:var(--ok-bg)}
+.maps button.bad{border-color:var(--err);color:var(--err);background:var(--err-bg)}
+.stage{position:relative;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 0%, #0d4459 0%, #041b27 75%);border-radius:12px;padding:10px;overflow:hidden;min-height:200px;border:1px solid var(--line)}
+.stage::before{content:"";position:absolute;inset:0;background:repeating-radial-gradient(circle at 50% 120%, transparent 0 38px, rgba(72,229,214,.05) 38px 39px);pointer-events:none}
+.board{position:relative;display:grid;gap:0;border-radius:6px;overflow:hidden}
+.cell{width:var(--c);height:var(--c);position:relative}
+.cell.w{background:var(--water);background-image:radial-gradient(circle at 30% 30%, var(--caustic) 0 22%, transparent 23%),radial-gradient(circle at 75% 70%, var(--caustic) 0 14%, transparent 15%)}
+.cell.w.alt{background-color:var(--water-2)}
+.cell.r{background:var(--rock-lo)}
+.cell.r::after{content:"";position:absolute;inset:3%;background:linear-gradient(150deg,var(--rock-hi),var(--rock) 50%,var(--rock-lo));clip-path:polygon(4% 40%,20% 8%,48% 4%,74% 14%,96% 38%,92% 78%,66% 96%,30% 94%,6% 74%);border-radius:30%}
+.cell.r.v2::after{clip-path:polygon(8% 22%,36% 4%,70% 8%,94% 30%,96% 66%,76% 94%,38% 96%,6% 78%,2% 48%)}
+.cell.r.v3::after{clip-path:polygon(2% 56%,14% 18%,44% 6%,82% 10%,98% 42%,88% 84%,52% 98%,18% 90%)}
+.cur{position:absolute;inset:0;display:grid;place-items:center;color:var(--current);font-family:var(--f-code);font-weight:700;font-size:calc(var(--c)*.5);transform:rotate(var(--r));opacity:.85}
+.cur span{animation:flow 1.1s linear infinite}
+@keyframes flow{0%{transform:translateX(-18%);opacity:.55}50%{opacity:1}100%{transform:translateX(18%);opacity:.55}}
+.gem{position:absolute;left:50%;top:50%;width:46%;height:46%;transform:translate(-50%,-50%) rotate(45deg);background:linear-gradient(135deg,#fff3c4,var(--gold) 45%,#b8861f);border-radius:3px;box-shadow:0 0 12px rgba(245,196,81,.6);transition:transform .3s, opacity .3s;z-index:2}
+.gem.got{transform:translate(-50%,-170%) rotate(45deg) scale(.3);opacity:0}
+.bub{position:absolute;inset:0;z-index:1}
+.bub i{position:absolute;border-radius:50%;border:2px solid var(--bubble);background:radial-gradient(circle at 35% 35%,rgba(255,255,255,.6) 0 18%,rgba(191,243,255,.18) 20%);animation:rise 2.4s ease-in-out infinite}
+.bub i:nth-child(1){width:42%;height:42%;left:14%;top:38%}
+.bub i:nth-child(2){width:26%;height:26%;left:56%;top:22%;animation-delay:.6s}
+.bub i:nth-child(3){width:18%;height:18%;left:58%;top:62%;animation-delay:1.2s}
+@keyframes rise{50%{transform:translateY(-10%)}}
+.kk{position:absolute;inset:18%;border-radius:50%;border:3px solid var(--k);display:grid;place-items:center;font-family:var(--f-display);font-weight:700;font-size:calc(var(--c)*.32);color:var(--k);box-shadow:0 0 10px var(--k);z-index:2;transition:transform .3s,opacity .3s}
+.kk.got{transform:translateY(-70%) scale(.3);opacity:0}
+.door{position:absolute;inset:6%;border-radius:4px;background:repeating-linear-gradient(90deg,var(--k) 0 12%,transparent 12% 25%);border:2px solid var(--k);display:grid;place-items:center;transition:opacity .4s}
+.door b{background:var(--bg);color:var(--k);font-family:var(--f-display);font-size:calc(var(--c)*.32);padding:0 3px;border-radius:3px;line-height:1.2}
+.door.open{opacity:.25}
+.jelly,.eel{position:absolute;width:var(--c);height:var(--c);z-index:3;pointer-events:none}
+.jelly svg,.eel svg{width:100%;height:100%;filter:drop-shadow(0 0 6px var(--jelly))}
+.eel svg{filter:drop-shadow(0 0 6px var(--eel))}
+.eel{transition:transform var(--spd,180ms) ease-in-out}
+.flag{position:absolute;inset:4%;z-index:1}
+.cell .hl{position:absolute;inset:6%;border:3px solid var(--mark);border-radius:6px;box-shadow:0 0 calc(var(--c)*.25) var(--mark);z-index:4;animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.45}}
+.robot{position:absolute;left:0;top:0;width:var(--c);height:var(--c);z-index:5;transition:transform var(--spd,180ms) ease-in-out}
+.robot svg{width:100%;height:100%;transition:transform var(--spd,180ms) ease-in-out;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))}
+.robot.crash svg{animation:shake .35s}
+.robot.breath svg{filter:drop-shadow(0 0 10px var(--bubble))}
+@keyframes shake{0%,100%{translate:0}25%{translate:-8% 0}75%{translate:8% 0}}
+.boom{position:absolute;width:var(--c);height:var(--c);border-radius:50%;background:radial-gradient(circle,#fff,var(--accent) 40%,transparent 70%);opacity:.85;z-index:6;animation:fade 1s forwards}
+@keyframes fade{to{opacity:0}}
+.dados{font-family:var(--f-code);font-size:.82rem;color:var(--code-fg);background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;max-width:100%;overflow-x:auto;line-height:1.7;white-space:nowrap}
+.dados .lbl{display:block;font-family:var(--f-display);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--cool);margin-bottom:4px;white-space:normal}
+.overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(3,20,30,.82);z-index:10;padding:16px}
+.win{background:var(--panel);border:2px solid var(--accent);border-radius:16px;padding:18px 20px;text-align:center;max-width:340px;display:flex;flex-direction:column;gap:8px;align-items:center}
+.win b{font-family:var(--f-display);font-size:1.5rem;text-transform:uppercase;letter-spacing:.04em}
+.stars{display:flex;gap:4px;font-size:2rem;line-height:1}
+.stars span{color:var(--star-off)}
+.stars span.on{color:var(--star)}
+.win .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:4px}
+.out{font-family:var(--f-code);font-size:.78rem;color:var(--ink-soft);white-space:pre-wrap;max-height:90px;overflow:auto;border-top:1px dashed var(--line);padding-top:6px}
+.out:empty{display:none}
+.note{font-size:.84rem;color:var(--ink-soft);overflow-wrap:anywhere}
+.note:empty{display:none}
+.legend{display:flex;gap:6px 12px;flex-wrap:wrap;font-size:.76rem;color:var(--ink-soft)}
+.legend span{display:flex;align-items:center;gap:5px}
+.legend i{width:12px;height:12px;border-radius:3px;display:inline-block;flex:none}
+
+/* mapa de zonas */
+.levels{display:flex;flex-direction:column;gap:14px}
+.world{padding:18px 20px;display:grid;grid-template-columns:86px minmax(0,1fr);gap:4px 18px}
+.world .prof{grid-row:1 / span 3;font-family:var(--f-display);font-weight:700;color:var(--cool);font-size:1.25rem;line-height:1.1;font-variant-numeric:tabular-nums;border-right:2px dashed var(--line);padding-right:12px}
+.world .prof small{display:block;font-size:.7rem;letter-spacing:.14em;color:var(--ink-soft);font-weight:600}
+.world h2{font-family:var(--f-display);margin:0;font-size:1.35rem;letter-spacing:.02em}
+.world h2 span{color:var(--ink-soft);text-transform:uppercase;letter-spacing:.1em;font-size:.85rem;margin-right:8px}
+.world p{margin:0 0 10px;color:var(--ink-soft);font-size:.92rem}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.tile{display:flex;flex-direction:column;gap:4px;text-align:left;border:1.5px solid var(--line);background:var(--panel-2);border-radius:12px;padding:10px 12px;color:var(--ink)}
+.tile:hover:not(:disabled){border-color:var(--ink-soft)}
+.tile .n{font-family:var(--f-display);font-size:.78rem;color:var(--ink-soft);letter-spacing:.12em}
+.tile b{font-size:.98rem;line-height:1.2}
+.tile .s{font-size:1rem;letter-spacing:2px}
+.tile .s span{color:var(--star-off)} .tile .s span.on{color:var(--star)}
+.tile:disabled{opacity:.5;cursor:not-allowed}
+.tile.next{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
+.intro-card{padding:20px 22px;display:flex;gap:18px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.intro-card p{margin:0;max-width:66ch}
+.intro-card .pre{font-size:.86rem;color:var(--ink-soft);margin-top:6px}
+.loading{font-size:.8rem;color:var(--code-dim)}
+
+@media (max-width:1020px){
+  .game{grid-template-columns:minmax(0,1fr);grid-template-areas:"mission" "board" "editor"}
+  .boardcard{position:static}
+}
+@media (max-width:600px){
+  .mission{padding:16px}
+  .top{gap:8px}
+  .logo{font-size:1rem;gap:8px;min-width:0}
+  .logo div{white-space:normal;line-height:1.05}
+  .pill{padding:5px 9px}
+  .logo svg{width:34px;height:34px}
+  .logo small{display:none}
+  .top .btn{padding:8px 12px}
+  #code,.gutter{font-size:15px}
+  .actions .btn{flex:1}
+  .speed{margin-left:0;width:100%}
+  .speed button{flex:1}
+  .reftab{grid-template-columns:auto 1fr}
+  .stage{min-height:280px}
+  .overlay{overflow:auto;padding:10px}
+  .win{padding:12px 14px;gap:6px}
+  .win b{font-size:1.2rem}
+  .stars{font-size:1.6rem}
+  .reftab span.t{display:none}
+  .world{grid-template-columns:minmax(0,1fr)}
+  .world .prof{grid-row:auto;border-right:0;padding-right:0;font-size:1rem}
+  .world .prof small{display:inline;margin-right:6px}
+}
+@media (pointer:fine) and (min-width:1021px){.keys{display:none}}
+@media (prefers-reduced-motion:reduce){.robot,.robot svg,.gem,.eel,.kk{transition:none}.robot.crash svg,.cell .hl,.cur span,.bub i{animation:none}}
+</style>
+</head>
+<body>
+
+
+<header class="top">
+  <div class="logo"><svg viewBox="0 0 42 42" aria-hidden="true"><circle cx="21" cy="21" r="20" fill="#0a3a50"/><path d="M1 26 Q11 22 21 26 T41 26 L41 30 A20 20 0 0 1 1 30Z" fill="#062433"/><ellipse cx="21" cy="20" rx="12" ry="7" fill="#ff7b5c"/><rect x="17" y="9" width="6" height="7" rx="2" fill="#ff7b5c"/><circle cx="25" cy="20" r="3.4" fill="#bff3ff"/><circle cx="25" cy="20" r="1.6" fill="#0a3a50"/><path d="M9 20 L5 16 L5 24Z" fill="#ff7b5c"/><circle cx="34" cy="12" r="1.6" fill="none" stroke="#bff3ff"/><circle cx="31" cy="7" r="1" fill="none" stroke="#bff3ff"/></svg><div>Expedição Abissal<small>Python intermediário</small></div></div>
+  <div class="top-r">
+    <span class="pill" title="Estrelas conquistadas"><span class="st">★</span><span id="starCount">0</span></span>
+    <button class="btn" id="levelsBtn">Missões</button>
+  </div>
+</header>
+
+<main class="wrap" id="view"></main>
+
+<template id="gameTpl">
+  <div class="game">
+    <section class="card mission" id="mission"></section>
+    <section class="card boardcard" aria-label="Janela do sonar">
+      <div class="bhead"><span id="bstatus"></span><div class="maps" id="maps"></div></div>
+      <div class="stage" id="stage"><div class="board" id="board"></div></div>
+      <div class="note" id="note"></div>
+      <div class="legend" id="legend"></div>
+      <div class="out" id="out"></div>
+    </section>
+    <section class="edcol">
+      <div class="editor">
+        <div class="ed-head"><span>argo.py</span><span id="engine" class="loading">carregando Python…</span></div>
+        <div class="ed-body"><div class="gutter" id="gutter">1</div><textarea id="code" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" aria-label="Editor de código Python"></textarea></div>
+        <div class="keys" id="keys" aria-label="Símbolos"></div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="run">▶ Enviar ao ARGO</button>
+        <button class="btn" id="stop" hidden>■ Abortar</button>
+        <button class="btn ghost" id="reset">Recomeçar código</button>
+        <div class="speed" role="group" aria-label="Velocidade">
+          <button data-speed="380">Lento</button><button data-speed="160">Normal</button><button data-speed="50">Rápido</button>
+        </div>
+      </div>
+      <div id="feedback"></div>
+    </section>
+  </div>
+</template>
+
+<script>
+/* Expedição Abissal — motor do jogo e ponte com o Python do aluno (Skulpt) */
+const DIRS = { N:0, L:1, S:2, O:3 }, DNOME = "NLSO";
+const DX = [0, 1, 0, -1], DY = [-1, 0, 1, 0];
+const CORRENTES = { ">":"L", "<":"O", "^":"N", "v":"S" };
+
+function rng(seed){ let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function labirinto(w, h, seed, abrir = 0){
+  const R = rng(seed); const W = w * 2 + 1, H = h * 2 + 1;
+  const g = Array.from({length:H}, () => Array(W).fill("#"));
+  const seen = Array.from({length:h}, () => Array(w).fill(false));
+  const stack = [[0, 0]]; seen[0][0] = true; g[1][1] = ".";
+  while (stack.length){
+    const [cx, cy] = stack[stack.length - 1];
+    const viz = [[1,0],[-1,0],[0,1],[0,-1]].map(([dx, dy]) => [cx + dx, cy + dy, dx, dy]).filter(([nx, ny]) => nx >= 0 && ny >= 0 && nx < w && ny < h && !seen[ny][nx]);
+    if (!viz.length){ stack.pop(); continue; }
+    const [nx, ny, dx, dy] = viz[Math.floor(R() * viz.length)];
+    seen[ny][nx] = true; g[cy * 2 + 1 + dy][cx * 2 + 1 + dx] = "."; g[ny * 2 + 1][nx * 2 + 1] = "."; stack.push([nx, ny]);
+  }
+  let tries = 0;
+  while (abrir > 0 && tries++ < 800){
+    const x = 1 + Math.floor(R() * (W - 2)), y = 1 + Math.floor(R() * (H - 2));
+    if (g[y][x] !== "#") continue;
+    const hor = g[y][x-1] !== "#" && g[y][x+1] !== "#" && g[y-1][x] === "#" && g[y+1][x] === "#";
+    const ver = g[y-1][x] !== "#" && g[y+1][x] !== "#" && g[y][x-1] === "#" && g[y][x+1] === "#";
+    if (hor || ver){ g[y][x] = "."; abrir--; }
+  }
+  return g;
+}
+// corredor sinuoso feito de segmentos, sempre virando à direita
+function trilha(segs, marcas = {}){
+  let x = 0, y = 0, d = DIRS.L; const cells = [[0, 0]];
+  segs.forEach(len => { for (let k = 0; k < len; k++){ x += DX[d]; y += DY[d]; cells.push([x, y]); } d = (d + 1) % 4; });
+  const mx = Math.min(...cells.map(c => c[0])), my = Math.min(...cells.map(c => c[1]));
+  const W = Math.max(...cells.map(c => c[0])) - mx + 3, H = Math.max(...cells.map(c => c[1])) - my + 3;
+  const g = Array.from({length:H}, () => Array(W).fill("#"));
+  cells.forEach(([cx, cy], i) => { g[cy - my + 1][cx - mx + 1] = i === cells.length - 1 ? "@" : (marcas[i] || "."); });
+  return { grid: g.map(r => r.join("")), start: [1 - mx, 1 - my] };
+}
+
+/* ---------- simulação ---------- */
+class Falha extends Error {}
+class Sim {
+  constructor(map, cfg = {}){
+    this.grid = map.grid.map(r => r.split(""));
+    this.h = this.grid.length; this.w = this.grid[0].length;
+    [this.x, this.y] = map.start; this.dir = DIRS.L; this.cfg = cfg;
+    this.tesouros = new Set(); this.chaves = new Set(); this.total = 0;
+    this.grid.forEach((row, y) => row.forEach((c, x) => {
+      if (c === "$"){ this.tesouros.add(x + "," + y); this.total++; }
+      if (c === "@") this.base = [x, y];
+    }));
+    this.o2 = cfg.oxigenio || 0; this.o2max = cfg.oxigenio || 0;
+    this.criaturas = (map.criaturas || []).map(p => Array.isArray(p) ? { path: p, i: 0, d: 1 } : { path: p.path, i: p.i || 0, d: p.d || 1 });
+    this.trace = []; this.ticks = 0; this.coletados = [];
+  }
+  tile(x, y){ return (y < 0 || x < 0 || y >= this.h || x >= this.w) ? "#" : this.grid[y][x]; }
+  bloqueado(x, y){
+    const t = this.tile(x, y);
+    if (t === "#" || t === "|" || t === "X") return true;
+    if (t >= "A" && t <= "C") return !this.chaves.has(t.toLowerCase());
+    return false;
+  }
+  posCriaturas(){ return this.criaturas.map(c => c.path[c.i]); }
+  proximasCriaturas(){ return this.criaturas.map(c => { if (c.path.length < 2) return c.path[0]; let i = c.i + c.d; if (i < 0 || i >= c.path.length) i = c.i - c.d; return c.path[i]; }); }
+  moverCriaturas(antes){
+    const velhas = this.posCriaturas();
+    for (const c of this.criaturas){ if (c.path.length < 2) continue; if (c.i + c.d < 0 || c.i + c.d >= c.path.length) c.d = -c.d; c.i += c.d; }
+    const novas = this.posCriaturas();
+    if (novas.length) this.trace.push({ t:"cri", pos: novas.map(p => p.slice()) });
+    novas.forEach((p, k) => {
+      const choque = (p[0] === this.x && p[1] === this.y) || (antes && velhas[k][0] === this.x && velhas[k][1] === this.y && p[0] === antes[0] && p[1] === antes[1]);
+      if (choque){ this.trace.push({ t:"hit" }); throw new Falha("Uma criatura atingiu o submarino!"); }
+    });
+  }
+  pegar(){
+    const k = this.x + "," + this.y, t = this.tile(this.x, this.y);
+    if (this.tesouros.has(k)){ this.tesouros.delete(k); this.coletados.push([this.y, this.x]); this.trace.push({ t:"pick", x:this.x, y:this.y }); }
+    if (t >= "a" && t <= "c" && !this.chaves.has(t)){ this.chaves.add(t); this.trace.push({ t:"key", x:this.x, y:this.y, k:t }); }
+  }
+  mover(d){
+    const nx = this.x + DX[d], ny = this.y + DY[d];
+    this.dir = d;
+    if (this.bloqueado(nx, ny)){
+      if (this.cfg.parar){ this.trace.push({ t:"bump", d }); return; }
+      const t = this.tile(nx, ny);
+      this.trace.push({ t:"crash", x:nx, y:ny, d });
+      throw new Falha(t >= "A" && t <= "C" ? `A porta ${t} está trancada: falta a chave ${t.toLowerCase()}.` : "O submarino bateu numa rocha!");
+    }
+    if (this.o2max){ if (this.o2 <= 0){ this.trace.push({ t:"empty" }); throw new Falha("O oxigênio acabou!"); } this.o2--; }
+    this.x = nx; this.y = ny; this.trace.push({ t:"move", x:nx, y:ny, d, o2:this.o2 });
+    this.pegar();
+    const c = CORRENTES[this.tile(nx, ny)];
+    if (c){
+      const cd = DIRS[c], px = nx + DX[cd], py = ny + DY[cd];
+      if (!this.bloqueado(px, py)){ this.x = px; this.y = py; this.trace.push({ t:"push", x:px, y:py }); this.pegar(); }
+    }
+  }
+  acao(a){
+    this.ticks++;
+    const antes = [this.x, this.y];
+    if (a in DIRS) this.mover(DIRS[a]);
+    else if (a === "P") this.trace.push({ t:"wait" });
+    else if (a === "R"){
+      if (this.tile(this.x, this.y) !== "o") throw new Falha("Só dá para respirar ('R') em cima de uma bolha de ar.");
+      this.o2 = this.o2max; this.trace.push({ t:"breath", o2:this.o2 });
+    }
+    else throw new Falha(`"${a}" não é uma ação válida. Use "N", "S", "L", "O"${this.o2max ? ', "R" (respirar)' : ""} ou "P" (esperar).`);
+    if (this.criaturas.length) this.moverCriaturas(antes);
+  }
+  chegou(){ return this.x === this.base[0] && this.y === this.base[1]; }
+  completo(){ return this.chegou() && this.tesouros.size === 0; }
+}
+// referência em JS: menor número de comandos até o destino, aplicando correntes (sem portas)
+function proximaPos(grid, x, y, d, chaves){
+  const blk = (xx, yy) => { const t = grid[yy] && grid[yy][xx]; if (!t || t === "#" || t === "|" || t === "X") return true; if (t >= "A" && t <= "C") return !(chaves && chaves.has(t.toLowerCase())); return false; };
+  let nx = x + DX[d], ny = y + DY[d];
+  if (blk(nx, ny)) return null;
+  const c = CORRENTES[grid[ny][nx]];
+  if (c){ const cd = DIRS[c]; if (!blk(nx + DX[cd], ny + DY[cd])){ nx += DX[cd]; ny += DY[cd]; } }
+  return [nx, ny];
+}
+function menorRota(grid, sx, sy, tx, ty){
+  const seen = new Set([sx + "," + sy]), q = [[sx, sy, 0]];
+  while (q.length){ const [x, y, n] = q.shift(); if (x === tx && y === ty) return n;
+    for (let d = 0; d < 4; d++){ const p = proximaPos(grid, x, y, d); if (!p) continue; const k = p[0] + "," + p[1]; if (seen.has(k)) continue; seen.add(k); q.push([p[0], p[1], n + 1]); } }
+  return -1;
+}
+function menorRotaChaves(grid, sx, sy){
+  const key = (x, y, ks) => x + "," + y + "," + [...ks].sort().join("");
+  const q = [[sx, sy, new Set(), 0]], seen = new Set([key(sx, sy, new Set())]);
+  while (q.length){
+    const [x, y, ks, n] = q.shift();
+    if (grid[y][x] === "@") return n;
+    for (let d = 0; d < 4; d++){
+      const p = proximaPos(grid, x, y, d, ks); if (!p) continue;
+      const nk = new Set(ks); const t = grid[p[1]][p[0]]; if (t >= "a" && t <= "c") nk.add(t);
+      const k = key(p[0], p[1], nk); if (seen.has(k)) continue; seen.add(k); q.push([p[0], p[1], nk, n + 1]);
+    }
+  }
+  return -1;
+}
+
+/* ---------- ponte com o Python do aluno ---------- */
+const PRELUDIO_PY = `class Sonar:
+    def posicao(self):
+        return tuple(_sonda("posicao"))
+    def livre(self, direcao):
+        return _sonda("livre", direcao)
+    def oxigenio(self):
+        return _sonda("oxigenio")
+    def oxigenio_maximo(self):
+        return _sonda("oxigenio_maximo")
+    def na_bolha(self):
+        return _sonda("na_bolha")
+    def na_base(self):
+        return _sonda("na_base")
+    def criaturas_agora(self):
+        return set(tuple(p) for p in _sonda("criaturas_agora"))
+    def criaturas_proximo_turno(self):
+        return set(tuple(p) for p in _sonda("criaturas_proximo"))
+    def mapa(self):
+        return _sonda("mapa")
+`;
+let LINHAS_PRELUDIO = PRELUDIO_PY.split("\n").length - 1, LINHAS_ALUNO = 1e9;
+class ErroAluno extends Error { constructor(info){ super(info.msg); this.info = info; } }
+
+function toJS(v, depth = 0){
+  if (depth > 40) return null;
+  if (v === undefined || v === null || v === Sk.builtin.none.none$) return null;
+  if (v === Sk.builtin.bool.true$) return true;
+  if (v === Sk.builtin.bool.false$) return false;
+  if (v instanceof Sk.builtin.int_) return Number(v.v);
+  if (v instanceof Sk.builtin.float_) return v.v;
+  if (v instanceof Sk.builtin.str) return v.v;
+  if (v instanceof Sk.builtin.list || v instanceof Sk.builtin.tuple) return v.v.map(x => toJS(x, depth + 1));
+  if (v instanceof Sk.builtin.dict){
+    const out = []; const it = Sk.abstr.iter(v);
+    for (let k = it.tp$iternext(); k !== undefined; k = it.tp$iternext()) out.push([toJS(k, depth + 1), toJS(Sk.abstr.objectGetItem(v, k), depth + 1)]);
+    return { __dict: out };
+  }
+  if (v instanceof Sk.builtin.set || v instanceof Sk.builtin.frozenset || v instanceof Sk.builtin.generator){
+    const it = Sk.abstr.iter(v); const out = [];
+    for (let x = it.tp$iternext(), n = 0; x !== undefined && n < 5000; x = it.tp$iternext(), n++) out.push(toJS(x, depth + 1));
+    return v instanceof Sk.builtin.generator ? out : { __set: out };
+  }
+  return v;
+}
+const py = (v) => Sk.ffi.remapToPy(v);
+const tup = (arr) => new Sk.builtin.tuple(arr.map(x => Array.isArray(x) ? tup(x) : py(x)));
+
+function infoErro(e){
+  if (e instanceof ErroAluno) return e.info;
+  if (e instanceof Sk.builtin.BaseException){
+    const nome = e.tp$name || Sk.abstr.typeName(e);
+    let msg = "";
+    try { msg = toJS(e.args)[0]; } catch (_){}
+    if (msg === undefined || msg === null) msg = "";
+    let line = null;
+    const tb = e.traceback || [];
+    for (const fr of tb){ if (fr && fr.lineno){ line = fr.lineno - LINHAS_PRELUDIO; break; } }
+    if (line !== null && (line < 1 || line > LINHAS_ALUNO)) line = null;
+    const kind = /SyntaxError|IndentationError|TabError/.test(nome) ? "compile" : /TimeoutError|TimeLimitError/.test(nome) ? "timeout" : "exception";
+    return { kind, cls: nome, msg: String(msg), line, texto: `${nome}${msg !== "" ? ": " + msg : ""}` };
+  }
+  if (e instanceof RangeError) return { kind:"exception", cls:"RecursionError", msg:"recursão profunda demais", line:null, texto:"RecursionError: recursão profunda demais" };
+  return { kind:"internal", msg: String(e && e.message || e) };
+}
+
+function criarCtl(mod){
+  const g = mod.$d;
+  const chamar = (fn, args) => { Sk.execStart = Date.now(); return Sk.misceval.callsimArray(fn, args); };
+  return {
+    toJS, py, tup,
+    tem: (n) => !!g[n],
+    ehClasse: (n) => !!g[n] && Sk.builtin.checkClass(g[n]),
+    ehFuncao: (n) => !!g[n] && g[n] instanceof Sk.builtin.func,
+    subclasse: (a, b) => !!g[a] && !!g[b] && Sk.misceval.isTrue(Sk.builtin.issubclass(g[a], g[b])),
+    exige(nome, tipo){
+      if (!g[nome]) throw new ErroAluno({ kind:"compile", msg:`não encontrei ${tipo === "classe" ? "a classe" : "a função"} ${nome}. O nome precisa ser exatamente esse (maiúsculas contam)` });
+      if (tipo === "classe" && !Sk.builtin.checkClass(g[nome])) throw new ErroAluno({ kind:"compile", msg:`${nome} precisa ser uma classe (class ${nome}:)` });
+      if (tipo === "funcao" && Sk.builtin.checkClass(g[nome])) throw new ErroAluno({ kind:"compile", msg:`${nome} precisa ser uma função (def ${nome}(...):)` });
+    },
+    criar: (n, args) => chamar(g[n], args || []),
+    funcao: (n, args) => chamar(g[n], args || []),
+    metodo: (obj, nome, args) => chamar(Sk.abstr.gattr(obj, new Sk.builtin.str(nome)), args || []),
+    attr: (obj, nome) => Sk.abstr.gattr(obj, new Sk.builtin.str(nome)),
+    builtin: (n, args) => chamar(Sk.builtins[n], args || []),
+    texto: (v) => Sk.ffi.remapToJs(new Sk.builtin.str(v)),
+    repr: (v) => Sk.ffi.remapToJs(Sk.builtin.repr(v)),
+    lista: (arr) => new Sk.builtin.list(arr),
+    global: (n) => g[n],
+    instancia: (v, n) => !!g[n] && Sk.misceval.isTrue(Sk.builtin.isinstance(v, g[n])),
+    nomeTipo: (v) => Sk.abstr.typeName(v),
+    excecao(fn){
+      try { fn(); return null; }
+      catch (e){ if (e instanceof Sk.builtin.BaseException){ const i = infoErro(e); i.obj = e; i.eh = (n) => !!g[n] && Sk.misceval.isTrue(Sk.builtin.isinstance(e, g[n])); return i; } throw e; }
+    },
+    falha: (msg) => { throw new ErroAluno({ kind:"compile", msg }); },
+  };
+}
+function sonarHost(sim){
+  return new Sk.builtin.func(function(nome, arg){
+    const n = toJS(nome);
+    switch (n){
+      case "posicao": return tup([sim.y, sim.x]);
+      case "livre": {
+        const d = toJS(arg);
+        if (!(d in DIRS)) throw new Sk.builtin.ValueError(`direção inválida "${d}": use "N", "S", "L" ou "O"`);
+        return py(!sim.bloqueado(sim.x + DX[DIRS[d]], sim.y + DY[DIRS[d]]));
+      }
+      case "oxigenio": return py(sim.o2);
+      case "oxigenio_maximo": return py(sim.o2max);
+      case "na_bolha": return py(sim.tile(sim.x, sim.y) === "o");
+      case "na_base": return py(sim.chegou());
+      case "criaturas_agora": return py(sim.posCriaturas().map(([x, y]) => [y, x]));
+      case "criaturas_proximo": return py(sim.proximasCriaturas().map(([x, y]) => [y, x]));
+      case "mapa": return py(sim.grid.map(r => r.join("")));
+    }
+    throw new Sk.builtin.AttributeError(n);
+  });
+}
+
+function rodar(missao, idx, codigo, seed){
+  const caso = missao.casos[idx];
+  const sim = caso.map ? new Sim(caso.map, Object.assign({}, missao.cfg || {}, caso.cfg || {})) : null;
+  let out = "", res = null, err = null; const extra = {};
+  Sk.configure({ output: t => { if (out.length < 20000) out += t; }, read: x => { if (!Sk.builtinFiles || !Sk.builtinFiles.files[x]) throw "arquivo não encontrado: " + x; return Sk.builtinFiles.files[x]; },
+    __future__: Sk.python3, execLimit: 4000, inputfun: () => { throw new Sk.builtin.RuntimeError("input() não funciona na expedição: os dados chegam pelos parâmetros"); }, inputfunTakesPrompt: true });
+  Sk.builtins._sonda = sim ? sonarHost(sim) : new Sk.builtin.func(() => Sk.builtin.none.none$);
+  try {
+    Sk.execStart = Date.now();
+    const pre = PRELUDIO_PY + (missao.preludio || "");
+    LINHAS_PRELUDIO = pre.split("\n").length - 1; LINHAS_ALUNO = codigo.split("\n").length;
+    const mod = Sk.importMainWithBody("<stdin>", false, pre + codigo + "\n" + (missao.posludio || ""), false);
+    const ctl = criarCtl(mod);
+    try { res = missao.rodar(ctl, sim, caso, extra); }
+    catch (e){ if (e instanceof Falha) res = { ok:false, msg: e.message }; else throw e; }
+  } catch (e){ err = infoErro(e); }
+  return { sim, out, err, res: err ? null : res, extra };
+}
+function rodarPiloto(ctl, sim, nomeClasse, maxTurnos){
+  ctl.exige(nomeClasse, "classe");
+  const p = ctl.criar(nomeClasse, []);
+  const sonar = ctl.criar("Sonar", []);
+  for (let t = 0; t < maxTurnos && !sim.completo(); t++){
+    const a = toJS(ctl.metodo(p, "agir", [sonar]));
+    if (typeof a !== "string") return { ok:false, msg:`agir precisa devolver um texto com a ação, como "L", mas devolveu ${a === null ? "None" : JSON.stringify(a)}.` };
+    sim.acao(a);
+  }
+  if (!sim.completo()) return { ok:false, msg: sim.tesouros.size ? `Depois de ${maxTurnos} turnos, ainda faltavam ${sim.tesouros.size} tesouro(s).` : `Depois de ${maxTurnos} turnos, o submarino não tinha chegado à base.` };
+  return { ok:true };
+}
+function executarRota(sim, movs, exigirCompleto = true){
+  if (!Array.isArray(movs)) return { ok:false, msg:`a rota precisa ser uma lista de movimentos, mas veio ${movs === null ? "None" : typeof movs}.` };
+  for (const m of movs){ if (typeof m !== "string") return { ok:false, msg:`cada movimento precisa ser um texto como "L", mas encontrei ${JSON.stringify(m)}.` }; sim.acao(m); }
+  if (exigirCompleto && !sim.chegou()) return { ok:false, msg:"A rota terminou, mas o submarino não chegou à base." };
+  if (exigirCompleto && sim.tesouros.size) return { ok:false, msg:`O submarino chegou à base, mas ficaram ${sim.tesouros.size} tesouro(s) para trás.` };
+  return { ok:true };
+}
+function linhasDeCodigo(code){
+  return code.split("\n").map(l => l.trim()).filter(t => t && !t.startsWith("#") && !t.startsWith("import ") && !t.startsWith("from ") && !t.startsWith("@")).length;
+}
+
+/* Expedição Abissal — zonas e missões */
+const ZONAS = [
+  { titulo: "Recife raso", ideia: "Funções e listas: transformar ordens em movimentos e simular a rota antes de mergulhar." },
+  { titulo: "Talude continental", ideia: "Dicionários e conjuntos: organizar o que o sonar encontra." },
+  { titulo: "Naufrágio do Aurora", ideia: "Classes: modelar tesouros, o porão e os equipamentos do ARGO." },
+  { titulo: "Correntes profundas", ideia: "Pilotos com memória e exceções: decidir a cada turno e lidar com o que dá errado." },
+  { titulo: "Cavernas abissais", ideia: "Recursão e geradores: explorar o que se ramifica." },
+  { titulo: "A Fossa", ideia: "Algoritmos: menor caminho, melhor carga e a expedição final." },
+];
+const SONAR = [
+  ["sonar.posicao()", "tuple", "(linha, coluna) do ARGO agora"],
+  ["sonar.livre(d)", "bool", "True se dá para ir na direção d (\"N\", \"S\", \"L\" ou \"O\")"],
+  ["sonar.oxigenio()", "int", "oxigênio que resta (cada movimento gasta 1)"],
+  ["sonar.oxigenio_maximo()", "int", "capacidade do tanque"],
+  ["sonar.na_bolha()", "bool", "True se o ARGO está sobre uma bolha de ar"],
+  ["sonar.na_base()", "bool", "True se chegou à base"],
+  ["sonar.criaturas_agora()", "set", "posições (linha, coluna) das criaturas agora"],
+  ["sonar.criaturas_proximo_turno()", "set", "onde as criaturas estarão depois deste turno"],
+  ["sonar.mapa()", "list", "o mapa inteiro, uma string por linha"],
+];
+const TESOURO_PY = `class Tesouro:
+    def __init__(self, nome, valor, peso):
+        self.nome = nome
+        self.valor = valor
+        self.peso = peso
+
+    @property
+    def densidade(self):
+        return self.valor / self.peso
+
+    def __str__(self):
+        return f"{self.nome} ({self.valor} moedas, {self.peso} kg)"
+
+    def __lt__(self, outro):
+        return self.densidade < outro.densidade
+`;
+
+/* ---------- utilidades ---------- */
+function mapaDe(rows, extra = {}){
+  let start = null;
+  const grid = rows.map((r, y) => { const x = r.indexOf("S"); if (x >= 0) start = [x, y]; return r.replace("S", "."); });
+  return Object.assign({ grid, start }, extra);
+}
+function expandirJS(s){ return s.split(/\s+/).filter(Boolean).flatMap(p => Array(p.length > 1 ? +p.slice(0, -1) : 1).fill(p.slice(-1))); }
+function compactarJS(movs){
+  const out = []; let i = 0;
+  while (i < movs.length){ let j = i; while (j < movs.length && movs[j] === movs[i]) j++; out.push((j - i > 1 ? j - i : "") + movs[i]); i = j; }
+  return out.join(" ");
+}
+function rotaMapa(movs, marcas = {}){
+  let x = 0, y = 0; const cells = [[0, 0]];
+  for (const m of movs){ const d = DIRS[m]; x += DX[d]; y += DY[d]; cells.push([x, y]); }
+  const mx = Math.min(...cells.map(c => c[0])), my = Math.min(...cells.map(c => c[1]));
+  const W = Math.max(...cells.map(c => c[0])) - mx + 3, H = Math.max(...cells.map(c => c[1])) - my + 3;
+  const g = Array.from({ length: H }, () => Array(W).fill("#"));
+  cells.forEach(([cx, cy], i) => { g[cy - my + 1][cx - mx + 1] = i === cells.length - 1 ? "@" : (marcas[i] || "."); });
+  return { grid: g.map(r => r.join("")), start: [1 - mx, 1 - my], cells: cells.map(([cx, cy]) => [cx - mx + 1, cy - my + 1]) };
+}
+function pyfmt(v){
+  if (v === null || v === undefined) return "None";
+  if (v === true) return "True"; if (v === false) return "False";
+  if (typeof v === "string") return "'" + v.replace(/\\/g, "\\\\").replace(/'/g, "\\'") + "'";
+  if (typeof v === "number") return Number.isInteger(v) ? String(v) : String(+v.toFixed(4));
+  if (Array.isArray(v)) return "[" + v.map(pyfmt).join(", ") + "]";
+  if (v.__tuple) return "(" + v.__tuple.map(pyfmt).join(", ") + (v.__tuple.length === 1 ? "," : "") + ")";
+  if (v.__set) return v.__set.length ? "{" + v.__set.map(pyfmt).sort().join(", ") + "}" : "set()";
+  if (v.__dict) return "{" + v.__dict.map(([k, x]) => pyfmt(k) + ": " + pyfmt(x)).join(", ") + "}";
+  return String(v);
+}
+const curto = (s, n = 180) => s.length > n ? s.slice(0, n) + " …" : s;
+function canon(v){
+  if (Array.isArray(v)) return v.map(canon);
+  if (v && typeof v === "object"){
+    if (v.__tuple) return v.__tuple.map(canon);
+    if (v.__set) return { s: v.__set.map(canon).map(x => JSON.stringify(x)).sort() };
+    if (v.__dict) return { d: v.__dict.map(([k, x]) => [JSON.stringify(canon(k)), canon(x)]).sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0) };
+  }
+  return v;
+}
+const igual = (a, b) => JSON.stringify(canon(a)) === JSON.stringify(canon(b));
+const T = (l, c) => ({ __tuple: [l, c] });
+function mostrarRota(sim, movs){ try { for (const m of movs){ if (typeof m !== "string") break; sim.acao(m); } } catch (e){ if (!(e instanceof Falha)) throw e; } }
+function chamada(nome, ...args){ return `${nome}(${args.join(", ")})`; }
+function vizinhos4(grid, x, y){ return [[1,0],[-1,0],[0,1],[0,-1]].map(([dx, dy]) => [x + dx, y + dy]).filter(([a, b]) => b >= 0 && a >= 0 && b < grid.length && a < grid[0].length); }
+function usaRecursao(code){
+  const nomes = [...code.matchAll(/def\s+(\w+)\s*\(/g)].map(m => m[1]);
+  return nomes.some(n => (code.match(new RegExp("\\b" + n + "\\s*\\(", "g")) || []).length >= 2);
+}
+function cavernas(seed, w, h, p){
+  const R = rng(seed);
+  const g = Array.from({ length: h }, (_, y) => Array.from({ length: w }, (_, x) => (x === 0 || y === 0 || x === w - 1 || y === h - 1 || R() < p) ? "#" : "."));
+  return g;
+}
+function contarCamarasJS(grid){
+  const g = grid.map(r => r.split("")); let n = 0;
+  for (let y = 0; y < g.length; y++) for (let x = 0; x < g[0].length; x++){
+    if (g[y][x] === "#") continue; n++; const st = [[x, y]]; g[y][x] = "#";
+    while (st.length){ const [a, b] = st.pop(); for (const [c, d] of vizinhos4(g, a, b)) if (g[d][c] !== "#"){ g[d][c] = "#"; st.push([c, d]); } }
+  }
+  return n;
+}
+function contarRotasJS(grid, s, f){
+  const seen = new Set(); let n = 0;
+  (function dfs(x, y){
+    if (grid[y][x] === "#" || seen.has(x + "," + y)) return;
+    if (x === f[0] && y === f[1]){ n++; return; }
+    seen.add(x + "," + y); for (const [a, b] of vizinhos4(grid, x, y)) dfs(a, b); seen.delete(x + "," + y);
+  })(s[0], s[1]);
+  return n;
+}
+function espiralJS(h, w){
+  const out = []; let t = 0, b = h - 1, l = 0, r = w - 1;
+  while (t <= b && l <= r){
+    for (let c = l; c <= r; c++) out.push([t, c]);
+    for (let y = t + 1; y <= b; y++) out.push([y, r]);
+    if (t < b) for (let c = r - 1; c >= l; c--) out.push([b, c]);
+    if (l < r) for (let y = b - 1; y > t; y--) out.push([y, l]);
+    t++; b--; l++; r--;
+  }
+  return out;
+}
+function mochilaJS(itens, cap){
+  const best = Array(cap + 1).fill(0);
+  for (const [, v, p] of itens) for (let c = cap; c >= p; c--) best[c] = Math.max(best[c], best[c - p] + v);
+  return best[cap];
+}
+function iterar(ctl, obj, limite){
+  const it = Sk.abstr.iter(obj); const out = [];
+  for (let x = it.tp$iternext(); x !== undefined; x = it.tp$iternext()){ out.push(toJS(x)); if (out.length > limite) break; }
+  return out;
+}
+const listaTuplas = (arr) => new Sk.builtin.list(arr.map(t => tup(t)));
+const listaStr = (arr) => new Sk.builtin.list(arr.map(s => new Sk.builtin.str(s)));
+const tipoPy = (ctl, r) => ctl.nomeTipo(r);
+
+/* ---------- mapas ---------- */
+const M1_ORDENS = ["3L 2S L", "2S 4L N 3L 2S", "12L S 3O 2S 5L"];
+const M1_MARCAS = [{ 3: "$" }, { 5: "$", 9: "$" }, { 6: "$", 15: "$", 20: "$" }];
+const M2_MOVS = [["L","L","L","S","S","L"], ["N","N","L","S","S","S","S","S","S","S","S","S","S","L"], ["O"], []];
+const M3_MAPAS = [
+  { rows: ["##########", "#S..>...@#", "#.##v###.#", "#..#..<..#", "##.#.#####", "#..^.....#", "##########"], movs: ["L","L","L","L","S","S","O","O","L","N","N","L"] },
+  { rows: ["###########", "#S.>..#..@#", "#.#v#.#.#.#", "#...<..>..#", "#.###.###.#", "#..^......#", "###########"], movs: ["S","S","L","L","L","N","N","L","S","S","L","L","N","L","L","L"] },
+  { rows: ["#########", "#S..v...#", "##.##.#.#", "#..>..<.#", "#.##^##.#", "#...<..@#", "#########"], movs: ["L","L","L","S","S","O","O","S","S","L","L","N","N","N","L","L","S","S","S","L","L"] },
+  { rows: ["#########", "#S.>#...#", "#.#.#.#.#", "#.^...v.#", "#.#.###.#", "#...<#.@#", "#########"], movs: ["L","L","S","S","L","L","L","L","S","S","O","O"] },
+];
+const M5_MAPAS = [
+  { seed: 11, rows: ["##############", "#S...#....$..#", "#.$..#.##....#", "#....$.#..$..#", "##.###.#.##..#", "#..$......#$.#", "#.....##.....#", "##############"] },
+  { seed: 23, rows: ["#############", "#S.$.....#..#", "#.##.##$.#$.#", "#....#....#.#", "#$##.#.$###.#", "#..........$#", "#############"] },
+];
+function varredurasDe(map, seed){
+  const R = rng(seed), scans = [[], [], []]; const agua = [], tes = [];
+  map.grid.forEach((r, y) => [...r].forEach((c, x) => { if (c === "$") tes.push([y, x]); else if (c === "." ) agua.push([y, x]); }));
+  tes.forEach((p, i) => { const k = i % 4 === 3 ? 1 : 2 + (i % 2); const idx = [0, 1, 2].sort(() => R() - .5).slice(0, k); idx.forEach(s => scans[s].push(p)); });
+  for (let k = 0; k < 7; k++){ const p = agua[Math.floor(R() * agua.length)]; scans[k % 3].push(p); }
+  const usado = new Set(scans.flat().map(q => q.join(",")));
+  const eco = agua.find((q, i) => i > agua.length / 2 && !usado.has(q.join(",")));
+  scans[1].push(eco, eco);
+  scans.forEach(s => s.sort(() => R() - .5));
+  return scans;
+}
+const M6_MAPAS = [
+  ["############", "#S....#...@#", "#..X..#.X..#", "#.....#....#", "#.##X....X.#", "#..........#", "############"],
+  ["###########", "#S.X......#", "#..#.###X.#", "#X.......X#", "#..##X.#..#", "#.X....#.@#", "###########"],
+];
+const M10_ROTAS = [
+  { rota: "7L 4S 5O 3S 9L 6N 4L 8S 3L", o2: 8, bolhas: [6, 13, 20, 27, 34, 41, 47], tes: [10, 30, 45] },
+  { rota: "4L 5N 6L 3S 4O 4S 9L 2N 3L", o2: 7, bolhas: [5, 11, 17, 23, 29, 35], tes: [8, 20, 38] },
+];
+function corredorM10(c){
+  const marcas = {}; c.bolhas.forEach(i => marcas[i] = "o"); c.tes.forEach(i => marcas[i] = "$");
+  const m = rotaMapa(expandirJS(c.rota), marcas); return { grid: m.grid, start: m.start, cfg: { oxigenio: c.o2 } };
+}
+const M11_ROTAS = [
+  { rota: "9L 4S 10L 5N 6L", poços: [[4, 2, 0], [6, 2, 3], [17, 2, 1], [21, 3, 2]], tes: [6, 20] },
+  { rota: "6L 3S 12L 4N 8L", poços: [[3, 2, 6], [12, 3, 0], [16, 2, 0], [27, 2, 3], [31, 3, 8]], tes: [10, 25] },
+];
+function corredorM11(c){
+  const marcas = {}; c.tes.forEach(i => marcas[i] = "$");
+  const m = rotaMapa(expandirJS(c.rota), marcas);
+  const pad = 4; // abre espaço vertical para os poços
+  let grid = [...Array(pad).fill("#".repeat(m.grid[0].length)), ...m.grid, ...Array(pad).fill("#".repeat(m.grid[0].length))].map(r => r.split(""));
+  const criaturas = [];
+  for (const [idx, k, fase] of c.poços){
+    const [x, y0] = m.cells[idx]; const y = y0 + pad; const path = [];
+    for (let d = -k; d <= k; d++){ if (grid[y + d][x] === "#") grid[y + d][x] = "."; path.push([x, y + d]); }
+    criaturas.push({ path, i: fase % path.length, d: 1 });
+  }
+  return { grid: grid.map(r => r.join("")), start: [m.start[0], m.start[1] + pad], criaturas };
+}
+const M12_CASOS = [
+  { ordens: ["L:3", "S:2", "X:4", "L:dois", "L:1", "N:0", "S:3"], marcas: { 4: "$" } },
+  { ordens: ["L:2, S:3", "L:4, Q:1", "L:5", "N:2,L:2"], marcas: { 7: "$" } },
+  { ordens: ["L:3", "L:2.5", "O:-1", "S:2", "L:3", "N:três"], marcas: { 2: "$", 6: "$" } },
+];
+function interpretarJS(ordem){
+  const movs = [];
+  for (const parte of ordem.split(",")){
+    const p = parte.trim(); const i = p.indexOf(":");
+    const d = i < 0 ? p : p.slice(0, i), q = i < 0 ? "" : p.slice(i + 1);
+    if (!["N", "S", "L", "O"].includes(d)) return { erro: `Direção inválida: ${d}` };
+    if (!/^[+-]?\d+$/.test(q.trim()) ) return { erro: `Quantidade inválida: ${q}` };
+    const n = parseInt(q, 10); if (n <= 0) return { erro: `Quantidade inválida: ${q}` };
+    for (let k = 0; k < n; k++) movs.push(d);
+  }
+  return { movs };
+}
+const M13_MAPAS = [cavernas(5, 16, 10, .42), cavernas(17, 18, 10, .45), cavernas(42, 14, 9, .38)].map(g => g.map(r => r.join("")));
+const M14_TAM = [[4, 5], [3, 7], [1, 6], [5, 2], [6, 6]];
+function salaEspiral(h, w, seed){
+  const R = rng(seed), seq = espiralJS(h, w);
+  const g = Array.from({ length: h + 2 }, (_, y) => Array.from({ length: w + 2 }, (_, x) => (x === 0 || y === 0 || x === w + 1 || y === h + 1) ? "#" : "."));
+  for (let k = 0; k < Math.max(1, Math.floor(h * w / 6)); k++){ const [l, c] = seq[1 + Math.floor(R() * (seq.length - 2))] || seq[0]; g[l + 1][c + 1] = "$"; }
+  const [ul, uc] = seq[seq.length - 1]; g[ul + 1][uc + 1] = "@";
+  if (seq.length === 1) g[1][1] = "@";
+  return { grid: g.map(r => r.join("")), start: [1, 1] };
+}
+const M15_MAPAS = [
+  ["######", "#S...#", "#.#..#", "#...@#", "######"],
+  ["######", "#S...#", "#....#", "#....#", "#...@#", "######"],
+  ["#######", "#S..#.#", "#.#...#", "#...#.#", "#.#..@#", "#######"],
+];
+function mapaCorrentes(seed){
+  const R = rng(seed); const g = labirinto(8, 5, seed, 7);
+  const H = g.length, W = g[0].length; const ch = "><^v";
+  let n = 0, tries = 0;
+  while (n < 8 && tries++ < 500){
+    const x = 1 + Math.floor(R() * (W - 2)), y = 1 + Math.floor(R() * (H - 2));
+    if (g[y][x] !== "." || (x === 1 && y === 1) || (x === W - 2 && y === H - 2)) continue;
+    g[y][x] = ch[Math.floor(R() * 4)]; n++;
+  }
+  g[H - 2][W - 2] = "@";
+  return { grid: g.map(r => r.join("")), start: [1, 1] };
+}
+const M16_MAPAS = [mapaCorrentes(3), mapaCorrentes(8), mapaCorrentes(21)];
+const M17_CASOS = [
+  { cap: 10, itens: [["Ânfora", 60, 5], ["Coroa", 50, 4], ["Moedas", 40, 6], ["Colar", 30, 3], ["Espelho", 10, 2], ["Bússola", 25, 1]] },
+  { cap: 7, itens: [["Lingote", 70, 8], ["Anel", 15, 1], ["Taça", 30, 3], ["Prato", 20, 4]] },
+  { cap: 60, itens: [["Ânfora", 92, 12], ["Coroa", 57, 7], ["Moedas", 49, 6], ["Colar", 68, 9], ["Espelho", 23, 4], ["Bússola", 41, 5], ["Sextante", 74, 11], ["Cálice", 33, 3], ["Broche", 19, 2], ["Estatueta", 88, 14], ["Baú", 120, 21], ["Mapa", 15, 1], ["Lanterna", 27, 5], ["Sino", 36, 8], ["Âncora", 50, 17], ["Pérola", 64, 2], ["Tiara", 77, 10], ["Adaga", 31, 4], ["Relógio", 45, 3], ["Leme", 22, 9], ["Garrafa", 12, 2], ["Escudo", 58, 13]] },
+];
+const M18_MAPAS = [
+  ["#############", "#S....#...b.#", "#.###.#.###.#", "#.#a..#.#...#", "#.#######.###", "#...>...A...#", "###########.#", "#@....B.....#", "#############"],
+  ["###############", "#S..v..#....c.#", "#.#.#.##.####.#", "#.#a#..#...#..#", "#.###.##.#.#.##", "#..>...A.#.#..#", "######.###.##.#", "#@..C..<..B...#", "###############", ],
+  ["##############", "#S..#...a....#", "#.#.#.#####..#", "#.#...#...#..#", "#.#######.##.#", "#...>A..#....#", "######.#######", "#@...C.....c.#", "##############"],
+];
+
+/* ---------- missões ---------- */
+const MISSOES = [
+/* ===== Zona 1 ===== */
+{ id: "a1", zona: 0, titulo: "Ordens compactas",
+  intro: `<p>O ARGO, nosso submarino-robô, recebe ordens da superfície pelo cabo acústico. Para economizar sinal, elas chegam <b>compactadas</b>: <code>"3L 2S L"</code> quer dizer três vezes para leste, duas para sul e uma para leste.</p>
+  <p>As direções são <code>"N"</code> (norte, para cima), <code>"S"</code> (sul), <code>"L"</code> (leste, direita) e <code>"O"</code> (oeste). O número pode ter mais de um dígito, como em <code>"12L"</code>, e quando não há número é uma vez só.</p>
+  <pre>"3L 2S L".split()   # ['3L', '2S', 'L']
+"12L"[:-1], "12L"[-1]  # ('12', 'L')
+["S"] * 3           # ['S', 'S', 'S']</pre>`,
+  task: `Escreva a função <code>expandir(ordem)</code> que devolve a <b>lista</b> de movimentos, um por casa. Ex.: <code>expandir("3L 2S L")</code> devolve <code>["L", "L", "L", "S", "S", "L"]</code>. O ARGO vai seguir a sua lista até a base.`,
+  starter: `def expandir(ordem):
+    movimentos = []
+    # para cada parte da ordem ("3L", "2S", "L"...):
+    #   descubra a direção (último caractere) e quantas vezes repetir
+    return movimentos
+`,
+  solution: `def expandir(ordem):
+    movimentos = []
+    for parte in ordem.split():
+        vezes = int(parte[:-1]) if len(parte) > 1 else 1
+        movimentos += [parte[-1]] * vezes
+    return movimentos
+`,
+  hint: `Percorra ordem.split(). Em cada parte, parte[-1] é a direção e parte[:-1] é o número (texto). Se a parte tiver só 1 caractere, a quantidade é 1. Use int() para converter e lista * n para repetir.`,
+  casos: M1_ORDENS.map((o, i) => ({ ordem: o, map: rotaMapa(expandirJS(o), M1_MARCAS[i]), nota: `Ordem recebida: "${o}"` })),
+  rodar(ctl, sim, caso){
+    ctl.exige("expandir", "funcao");
+    const r = ctl.funcao("expandir", [py(caso.ordem)]); const v = toJS(r);
+    const esperado = expandirJS(caso.ordem);
+    if (tipoPy(ctl, r) !== "list") return { ok: false, msg: `expandir("${caso.ordem}") precisa devolver uma lista, mas devolveu ${curto(ctl.repr(r))}.` };
+    if (!igual(v, esperado)){ mostrarRota(sim, v); return { ok: false, msg: `expandir("${caso.ordem}") devolveu ${curto(pyfmt(v))}, mas o certo é ${curto(pyfmt(esperado))}.` }; }
+    const res = executarRota(sim, v); if (res.ok) res.nota = `expandir("${caso.ordem}") → ${v.length} movimentos`; return res;
+  } },
+
+{ id: "a2", zona: 0, titulo: "Diário de bordo",
+  intro: `<p>Agora o caminho inverso. O ARGO grava cada movimento que faz, um por um, e a superfície quer o diário no mesmo formato compacto da missão anterior.</p>
+  <p>Repetições seguidas viram número + direção; um movimento isolado vai só com a letra. As partes são separadas por um espaço:</p>
+  <pre>["L", "L", "L", "S", "S", "L"]  →  "3L 2S L"
+["O"]                           →  "O"
+[]                              →  ""</pre>
+  <pre>" ".join(["3L", "2S", "L"])   # '3L 2S L'
+f"{3}{'L'}"                     # '3L'</pre>`,
+  task: `Escreva <code>compactar(movimentos)</code>, que recebe a lista e devolve o texto compacto. Atenção a listas vazias e a sequências de 10 ou mais.`,
+  starter: `def compactar(movimentos):
+    partes = []
+    # junte cada bloco de movimentos iguais seguidos
+    return " ".join(partes)
+`,
+  solution: `def compactar(movimentos):
+    partes = []
+    i = 0
+    while i < len(movimentos):
+        j = i
+        while j < len(movimentos) and movimentos[j] == movimentos[i]:
+            j += 1
+        vezes = j - i
+        partes.append(f"{vezes}{movimentos[i]}" if vezes > 1 else movimentos[i])
+        i = j
+    return " ".join(partes)
+`,
+  hint: `Use dois índices: i marca o começo de um bloco, j anda enquanto movimentos[j] for igual a movimentos[i]. O tamanho do bloco é j - i. Depois continue de i = j. Outra ideia: guarde a direção atual e um contador, e feche o bloco quando a direção mudar (sem esquecer o último bloco).`,
+  casos: M2_MOVS.map(m => ({ movs: m, map: rotaMapa(m, m.length > 5 ? { 5: "$" } : {}) })),
+  rodar(ctl, sim, caso){
+    ctl.exige("compactar", "funcao");
+    executarRota(sim, caso.movs);
+    const r = ctl.funcao("compactar", [listaStr(caso.movs)]); const v = toJS(r);
+    const esperado = compactarJS(caso.movs);
+    if (typeof v !== "string") return { ok: false, msg: `compactar(${curto(pyfmt(caso.movs))}) precisa devolver um texto, mas devolveu ${curto(ctl.repr(r))}.` };
+    if (v !== esperado) return { ok: false, msg: `compactar(${curto(pyfmt(caso.movs))}) devolveu ${pyfmt(v)}, mas o certo é ${pyfmt(esperado)}.` };
+    return { ok: true, nota: `Diário: ${pyfmt(v)}` };
+  } },
+
+{ id: "a3", zona: 0, titulo: "Simulador de correntes",
+  intro: `<p>Antes de arriscar o ARGO, a equipe quer simular a rota no computador. O mapa chega como uma lista de strings: <code>mapa[linha][coluna]</code> é a casa. <code>"#"</code> é rocha; o resto é água.</p>
+  <p>Regras do fundo do mar:</p>
+  <p>1. Se o movimento levaria para uma rocha, o ARGO <b>fica parado</b> naquele movimento.<br>2. Ao entrar numa casa de <b>corrente</b> (<code>&gt;</code> <code>&lt;</code> <code>^</code> <code>v</code>), ele é empurrado <b>mais uma casa</b> na direção da seta, se essa casa não for rocha. Só um empurrão por movimento (sem efeito dominó).</p>
+  <pre>PASSO = {"N": (-1, 0), "S": (1, 0), "L": (0, 1), "O": (0, -1)}
+l, c = inicio            # desempacotar a tupla</pre>`,
+  task: `Escreva <code>simular(mapa, inicio, movimentos)</code>: <code>inicio</code> é a tupla <code>(linha, coluna)</code> e a função devolve a tupla com a posição final. O tabuleiro mostra a rota de verdade; o seu resultado precisa bater.`,
+  starter: `PASSO = {"N": (-1, 0), "S": (1, 0), "L": (0, 1), "O": (0, -1)}
+CORRENTE = {">": "L", "<": "O", "^": "N", "v": "S"}
+
+def simular(mapa, inicio, movimentos):
+    l, c = inicio
+    # aplique cada movimento seguindo as regras
+    return (l, c)
+`,
+  solution: `PASSO = {"N": (-1, 0), "S": (1, 0), "L": (0, 1), "O": (0, -1)}
+CORRENTE = {">": "L", "<": "O", "^": "N", "v": "S"}
+
+def simular(mapa, inicio, movimentos):
+    l, c = inicio
+    for m in movimentos:
+        dl, dc = PASSO[m]
+        if mapa[l + dl][c + dc] != "#":
+            l, c = l + dl, c + dc
+            if mapa[l][c] in CORRENTE:
+                dl, dc = PASSO[CORRENTE[mapa[l][c]]]
+                if mapa[l + dl][c + dc] != "#":
+                    l, c = l + dl, c + dc
+    return (l, c)
+`,
+  hint: `Para cada movimento: calcule a casa vizinha com PASSO. Se não for "#", mude (l, c). Depois veja se a nova casa é uma corrente (está em CORRENTE): se for, calcule mais um passo na direção dela e, se não for rocha, mude de novo.`,
+  cfg: { parar: true },
+  casos: M3_MAPAS.map(m => ({ map: mapaDe(m.rows), movs: m.movs, nota: `Movimentos: ${compactarJS(m.movs)}` })),
+  rodar(ctl, sim, caso){
+    ctl.exige("simular", "funcao");
+    const ini = [sim.y, sim.x];
+    const r = ctl.funcao("simular", [listaStr(caso.map.grid), tup(ini), listaStr(caso.movs)]); const v = toJS(r);
+    for (const m of caso.movs) sim.acao(m);
+    const certo = [sim.y, sim.x];
+    if (!Array.isArray(v) || v.length !== 2 || !v.every(Number.isInteger)) return { ok: false, msg: `simular precisa devolver uma tupla (linha, coluna), mas devolveu ${curto(ctl.repr(r))}.` };
+    if (!igual(v, certo)) return { ok: false, msg: `Sua simulação terminou em (${v[0]}, ${v[1]}), mas o ARGO terminou em (${certo[0]}, ${certo[1]}). A casa marcada é a sua resposta.`, destaque: [[v[1], v[0]]] };
+    return { ok: true, nota: `Posição final: (${v[0]}, ${v[1]})` };
+  } },
+
+/* ===== Zona 2 ===== */
+{ id: "b1", zona: 1, titulo: "Inventário do talude",
+  intro: `<p>O ARGO voltou com uma lista de registros: cada um é uma tupla <code>(tipo, valor)</code>. A equipe quer um resumo por tipo.</p>
+  <pre>registros = [("moeda", 10), ("ânfora", 120), ("moeda", 15)]
+resumo(registros)
+# {"moeda": {"quantidade": 2, "valor": 25},
+#  "ânfora": {"quantidade": 1, "valor": 120}}</pre>
+  <p>É um <b>dicionário de dicionários</b>. Lembre: <code>if chave not in d:</code> verifica se a chave já existe, e <code>d[chave]["valor"] += x</code> altera o dicionário de dentro.</p>`,
+  task: `Escreva <code>resumo(registros)</code> que devolve o dicionário com <code>"quantidade"</code> e <code>"valor"</code> (soma) para cada tipo. Lista vazia devolve <code>{}</code>.`,
+  starter: `def resumo(registros):
+    tabela = {}
+    for tipo, valor in registros:
+        pass  # atualize tabela[tipo]
+    return tabela
+`,
+  solution: `def resumo(registros):
+    tabela = {}
+    for tipo, valor in registros:
+        if tipo not in tabela:
+            tabela[tipo] = {"quantidade": 0, "valor": 0}
+        tabela[tipo]["quantidade"] += 1
+        tabela[tipo]["valor"] += valor
+    return tabela
+`,
+  hint: `Quando o tipo aparece pela primeira vez, crie tabela[tipo] = {"quantidade": 0, "valor": 0}. Depois, sempre, some 1 na quantidade e o valor no "valor".`,
+  casos: [
+    { regs: [["moeda", 10], ["ânfora", 120], ["moeda", 15], ["colar", 80], ["moeda", 5]] },
+    { regs: [] },
+    { regs: [["estátua", 300]] },
+    { regs: [["pérola", 40], ["pérola", 45], ["anel", 20], ["pérola", 50], ["anel", 25], ["sino", 60]] },
+  ].map(c => Object.assign(c, { mostra: `resumo(${pyfmt(c.regs.map(r => ({ __tuple: r })))})` })),
+  rodar(ctl, sim, caso){
+    ctl.exige("resumo", "funcao");
+    const r = ctl.funcao("resumo", [listaTuplas(caso.regs)]); const v = toJS(r);
+    const ord = []; const m = {};
+    for (const [t, x] of caso.regs){ if (!m[t]){ m[t] = [0, 0]; ord.push(t); } m[t][0]++; m[t][1] += x; }
+    const esperado = { __dict: ord.map(t => [t, { __dict: [["quantidade", m[t][0]], ["valor", m[t][1]]] }]) };
+    if (!v || !v.__dict) return { ok: false, msg: `resumo precisa devolver um dicionário, mas devolveu ${curto(ctl.repr(r))}.` };
+    if (!igual(v, esperado)) return { ok: false, msg: `Resultado: ${curto(ctl.repr(r), 260)}. Esperado: ${curto(pyfmt(esperado), 260)}.` };
+    return { ok: true, nota: `→ ${curto(ctl.repr(r), 260)}` };
+  } },
+
+{ id: "b2", zona: 1, titulo: "Ecos confirmados",
+  intro: `<p>O sonar fez <b>três varreduras</b> da área. Cada varredura é uma lista de posições <code>(linha, coluna)</code> onde algo refletiu o som. Peixes e bolhas dão ecos falsos que só aparecem uma vez; um objeto de verdade aparece em <b>pelo menos duas</b> varreduras diferentes.</p>
+  <p>Cuidado: uma mesma varredura pode repetir a posição, e isso não conta como confirmação. Conjuntos (<code>set</code>) resolvem isso:</p>
+  <pre>set([(1, 2), (1, 2), (3, 4)])   # {(1, 2), (3, 4)}
+{p for p in lista if cond}       # compreensão de conjunto</pre>`,
+  task: `Escreva <code>confirmados(varreduras)</code> que devolve um <b>conjunto</b> com as posições presentes em 2 ou mais varreduras diferentes. As posições que você devolver aparecem marcadas no mapa.`,
+  starter: `def confirmados(varreduras):
+    contagem = {}
+    # conte em quantas varreduras diferentes cada posição aparece
+    return set()
+`,
+  solution: `def confirmados(varreduras):
+    contagem = {}
+    for varredura in varreduras:
+        for pos in set(varredura):
+            contagem[pos] = contagem.get(pos, 0) + 1
+    return {pos for pos, n in contagem.items() if n >= 2}
+`,
+  hint: `Transforme cada varredura em set(varredura) antes de contar, assim repetições dentro dela somem. Use um dicionário posição → contagem (dict.get(pos, 0) + 1) e no fim monte o conjunto com {pos for pos, n in contagem.items() if n >= 2}.`,
+  analise: true,
+  casos: M5_MAPAS.map(m => { const map = mapaDe(m.rows); return { map, scans: varredurasDe(map, m.seed), nota: "Três varreduras do sonar" }; }),
+  rodar(ctl, sim, caso){
+    ctl.exige("confirmados", "funcao");
+    const arg = new Sk.builtin.list(caso.scans.map(s => listaTuplas(s)));
+    const r = ctl.funcao("confirmados", [arg]); const v = toJS(r);
+    const cont = {}; caso.scans.forEach(s => new Set(s.map(p => p.join(","))).forEach(k => cont[k] = (cont[k] || 0) + 1));
+    const esperado = { __set: Object.keys(cont).filter(k => cont[k] >= 2).map(k => k.split(",").map(Number)) };
+    if (!v || !v.__set) return { ok: false, msg: `confirmados precisa devolver um conjunto (set), mas devolveu ${curto(ctl.repr(r))}.` };
+    const marcar = v.__set.filter(p => Array.isArray(p) && p.length === 2).map(([l, c]) => [c, l]);
+    if (!igual(v, esperado)){
+      const falta = esperado.__set.filter(p => !v.__set.some(q => igual(q, p)));
+      const sobra = v.__set.filter(p => !esperado.__set.some(q => igual(q, p)));
+      return { ok: false, destaque: marcar, msg: `${sobra.length ? `Não deveriam estar: ${curto(sobra.map(p => pyfmt({ __tuple: p })).join(", "))}. ` : ""}${falta.length ? `Faltaram: ${curto(falta.map(p => pyfmt({ __tuple: p })).join(", "))}.` : ""}` };
+    }
+    return { ok: true, destaque: marcar, nota: `${v.__set.length} objetos confirmados.` };
+  } },
+
+{ id: "b3", zona: 1, titulo: "Mapa de perigo",
+  intro: `<p>Medusas-lanterna (<code>"X"</code> no mapa) estão paradas na região, e nenhuma rota deve encostar nelas sem saber o risco. Para cada casa de água, o risco é <b>quantas medusas estão ao lado</b> (norte, sul, leste e oeste; diagonal não conta).</p>
+  <pre>for l, linha in enumerate(mapa):
+    for c, casa in enumerate(linha):
+        ...
+{(l, c): n for ...}   # compreensão de dicionário</pre>
+  <p>Casas de água são todas as que não são <code>"#"</code> nem <code>"X"</code> (a base e o ponto de partida também contam). O mapa sempre tem borda de rocha, então os vizinhos nunca saem da lista.</p>`,
+  task: `Escreva <code>zonas_perigosas(mapa)</code> que devolve um dicionário <code>{(linha, coluna): quantidade}</code> só com as casas de água que têm <b>pelo menos 1</b> medusa vizinha.`,
+  starter: `VIZINHOS = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+
+def zonas_perigosas(mapa):
+    perigo = {}
+    return perigo
+`,
+  solution: `VIZINHOS = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+
+def zonas_perigosas(mapa):
+    perigo = {}
+    for l, linha in enumerate(mapa):
+        for c, casa in enumerate(linha):
+            if casa not in "#X":
+                n = sum(1 for dl, dc in VIZINHOS if mapa[l + dl][c + dc] == "X")
+                if n > 0:
+                    perigo[(l, c)] = n
+    return perigo
+`,
+  hint: `Dois laços com enumerate. Pule as casas "#" e "X". Para as outras, conte os vizinhos que são "X" (um laço sobre VIZINHOS, ou sum de um gerador). Só guarde no dicionário quando a contagem for maior que zero.`,
+  analise: true,
+  casos: M6_MAPAS.map(rows => ({ map: mapaDe(rows) })),
+  rodar(ctl, sim, caso){
+    ctl.exige("zonas_perigosas", "funcao");
+    const r = ctl.funcao("zonas_perigosas", [listaStr(caso.map.grid)]); const v = toJS(r);
+    const g = caso.map.grid, esp = [];
+    g.forEach((row, y) => [...row].forEach((ch, x) => { if (ch === "#" || ch === "X") return; const n = vizinhos4(g, x, y).filter(([a, b]) => g[b][a] === "X").length; if (n) esp.push([{ __tuple: [y, x] }, n]); }));
+    const esperado = { __dict: esp };
+    if (!v || !v.__dict) return { ok: false, msg: `zonas_perigosas precisa devolver um dicionário, mas devolveu ${curto(ctl.repr(r))}.` };
+    const marcar = v.__dict.map(([k]) => k).filter(k => Array.isArray(k) && k.length === 2).map(([l, c]) => [c, l]);
+    if (!igual(v, esperado)){
+      const errado = esp.find(([k, n]) => { const e = v.__dict.find(([kk]) => igual(kk, k.__tuple)); return !e || e[1] !== n; });
+      const extra = v.__dict.find(([kk]) => !esp.some(([k]) => igual(kk, k.__tuple)));
+      if (extra) return { ok: false, destaque: marcar, msg: `A casa ${pyfmt({ __tuple: extra[0] })} não deveria estar no dicionário${extra[1] === 0 ? " (risco zero fica de fora)" : ""}.` };
+      const [k, n] = errado; const e = v.__dict.find(([kk]) => igual(kk, k.__tuple));
+      return { ok: false, destaque: marcar, msg: e ? `Na casa ${pyfmt(k)} o certo é ${n} medusa(s) vizinha(s), mas veio ${pyfmt(e[1])}.` : `Faltou a casa ${pyfmt(k)} (${n} medusa(s) vizinha(s)).` };
+    }
+    return { ok: true, destaque: marcar, nota: `${esp.length} casas de risco mapeadas.` };
+  } },
+
+/* ===== Zona 3 ===== */
+{ id: "c1", zona: 2, titulo: "A classe Tesouro",
+  intro: `<p>Chegamos ao naufrágio do <i>Aurora</i>. Cada peça encontrada vai virar um objeto da classe <code>Tesouro</code>, com <code>nome</code>, <code>valor</code> (em moedas) e <code>peso</code> (em kg).</p>
+  <p>Três recursos de classe aparecem aqui:</p>
+  <pre>@property              # método lido como atributo: t.densidade
+def densidade(self): ...
+
+def __str__(self):     # o que print(t) e str(t) mostram
+def __lt__(self, outro):  # define t1 &lt; t2, e com isso sorted() funciona</pre>`,
+  task: `Crie a classe <code>Tesouro(nome, valor, peso)</code> com: a propriedade <code>densidade</code> (valor ÷ peso), <code>__str__</code> no formato <code>Ânfora (120 moedas, 4 kg)</code> e <code>__lt__</code> comparando pela densidade, para que <code>sorted(tesouros)</code> ordene do menos para o mais denso.`,
+  starter: `class Tesouro:
+    def __init__(self, nome, valor, peso):
+        self.nome = nome
+        # guarde valor e peso também
+
+`,
+  solution: TESOURO_PY,
+  hint: `Use @property em cima de def densidade(self): return self.valor / self.peso. O __str__ devolve uma f-string: f"{self.nome} ({self.valor} moedas, {self.peso} kg)". O __lt__(self, outro) devolve self.densidade < outro.densidade.`,
+  casos: [
+    { itens: [["Ânfora", 120, 4], ["Moeda de ouro", 30, 1], ["Canhão", 200, 50], ["Colar", 90, 2]] },
+    { itens: [["Sino", 60, 12], ["Coroa", 300, 3], ["Espelho", 45, 5]] },
+  ].map(c => Object.assign(c, { mostra: c.itens.map(([n, v, p]) => `Tesouro(${pyfmt(n)}, ${v}, ${p})`).join("<br>") })),
+  rodar(ctl, sim, caso){
+    ctl.exige("Tesouro", "classe");
+    const objs = caso.itens.map(([n, v, p]) => ctl.criar("Tesouro", [py(n), py(v), py(p)]));
+    for (let k = 0; k < objs.length; k++){
+      const [n, v, p] = caso.itens[k]; const o = objs[k];
+      const d = toJS(ctl.attr(o, "densidade"));
+      if (typeof d !== "number") return { ok: false, msg: `t.densidade precisa ser um número (use @property em cima do método), mas veio ${curto(ctl.repr(ctl.attr(o, "densidade")))}.` };
+      if (Math.abs(d - v / p) > 1e-9) return { ok: false, msg: `A densidade de ${n} deveria ser ${pyfmt(v / p)} (${v} ÷ ${p}), mas veio ${pyfmt(d)}.` };
+      const s = toJS(ctl.builtin("str", [o])); const se = `${n} (${v} moedas, ${p} kg)`;
+      if (s !== se) return { ok: false, msg: `str(t) deveria ser ${pyfmt(se)}, mas veio ${pyfmt(s)}.` };
+    }
+    const ord = ctl.builtin("sorted", [ctl.lista(objs)]);
+    const nomes = ord.v.map(o => toJS(ctl.attr(o, "nome")));
+    const certo = caso.itens.slice().sort((a, b) => a[1] / a[2] - b[1] / b[2]).map(x => x[0]);
+    if (!igual(nomes, certo)) return { ok: false, msg: `sorted(tesouros) deu ${pyfmt(nomes)}, mas o certo (da menor para a maior densidade) é ${pyfmt(certo)}.` };
+    return { ok: true, nota: `Ordenados: ${certo.join(" < ")}` };
+  } },
+
+{ id: "c2", zona: 2, titulo: "Porão com limite",
+  intro: `<p>O porão do ARGO aguenta um peso máximo. Se uma peça não couber, o porão precisa <b>recusar</b> e avisar com uma exceção própria, que diz quanto passou do limite.</p>
+  <pre>class CargaExcedida(Exception):
+    def __init__(self, excesso):
+        super().__init__(f"Excesso de {excesso} kg")
+        self.excesso = excesso
+
+raise CargaExcedida(3)</pre>
+  <p>A classe <code>Tesouro</code> da missão anterior já vem pronta (veja a referência). O <code>__len__</code> faz <code>len(porao)</code> funcionar.</p>`,
+  task: `Crie <code>CargaExcedida</code> (como acima) e a classe <code>Porao(capacidade)</code> com: <code>adicionar(tesouro)</code>, que guarda a peça ou lança <code>CargaExcedida(excesso)</code> sem guardar; <code>peso_total()</code>; e <code>__len__</code> (quantas peças há).`,
+  preludio: TESOURO_PY,
+  starter: `class CargaExcedida(Exception):
+    def __init__(self, excesso):
+        super().__init__(f"Excesso de {excesso} kg")
+        self.excesso = excesso
+
+
+class Porao:
+    def __init__(self, capacidade):
+        self.capacidade = capacidade
+        self.itens = []
+`,
+  solution: `class CargaExcedida(Exception):
+    def __init__(self, excesso):
+        super().__init__(f"Excesso de {excesso} kg")
+        self.excesso = excesso
+
+
+class Porao:
+    def __init__(self, capacidade):
+        self.capacidade = capacidade
+        self.itens = []
+
+    def peso_total(self):
+        return sum(t.peso for t in self.itens)
+
+    def adicionar(self, tesouro):
+        excesso = self.peso_total() + tesouro.peso - self.capacidade
+        if excesso > 0:
+            raise CargaExcedida(excesso)
+        self.itens.append(tesouro)
+
+    def __len__(self):
+        return len(self.itens)
+`,
+  hint: `Em adicionar, calcule excesso = peso atual + peso da peça - capacidade. Se for maior que zero, raise CargaExcedida(excesso) ANTES do append. Senão, faça o append. Exatamente no limite (excesso 0) cabe.`,
+  casos: [
+    { cap: 20, itens: [["Ânfora", 120, 8], ["Colar", 90, 2], ["Canhão", 200, 50], ["Sino", 60, 10], ["Moeda", 30, 1], ["Taça", 40, 1]] },
+    { cap: 12, itens: [["Baú", 150, 13], ["Coroa", 300, 3], ["Espelho", 45, 5], ["Bússola", 20, 2], ["Prato", 15, 3], ["Anel", 25, 2]] },
+  ].map(c => Object.assign(c, { mostra: `porao = Porao(${c.cap})<br>` + c.itens.map(([n, v, p]) => `porao.adicionar(Tesouro(${pyfmt(n)}, ${v}, ${p}))`).join("<br>") })),
+  rodar(ctl, sim, caso){
+    ctl.exige("CargaExcedida", "classe"); ctl.exige("Porao", "classe");
+    if (!Sk.misceval.isTrue(Sk.builtin.issubclass(ctl.global("CargaExcedida"), Sk.builtin.Exception))) return { ok: false, msg: `CargaExcedida precisa herdar de Exception: class CargaExcedida(Exception):` };
+    const porao = ctl.criar("Porao", [py(caso.cap)]);
+    let total = 0, n = 0; const log = [];
+    for (const [nome, v, p] of caso.itens){
+      const t = ctl.criar("Tesouro", [py(nome), py(v), py(p)]);
+      const ex = ctl.excecao(() => ctl.metodo(porao, "adicionar", [t]));
+      const exc = total + p - caso.cap;
+      if (exc > 0){
+        if (!ex) return { ok: false, msg: `${nome} (${p} kg) não cabe: o porão tinha ${total} de ${caso.cap} kg. adicionar devia lançar CargaExcedida(${exc}).` };
+        if (!ex.eh("CargaExcedida")) return { ok: false, msg: `Ao recusar ${nome}, a exceção lançada foi ${ex.texto}, e não CargaExcedida.` };
+        const e = toJS(ctl.attr(ex.obj, "excesso"));
+        if (e !== exc) return { ok: false, msg: `O excesso ao tentar ${nome} é ${exc} kg, mas a exceção trouxe excesso = ${pyfmt(e)}.` };
+        const s = toJS(ctl.builtin("str", [ex.obj]));
+        if (s !== `Excesso de ${exc} kg`) return { ok: false, msg: `str(erro) deveria ser 'Excesso de ${exc} kg', mas veio ${pyfmt(s)}.` };
+        log.push(`✗ ${nome}: excesso de ${exc} kg`);
+      } else {
+        if (ex) return { ok: false, msg: `${nome} (${p} kg) cabe no porão (${total} de ${caso.cap} kg), mas adicionar lançou ${ex.texto}.` };
+        total += p; n++; log.push(`✓ ${nome}`);
+      }
+      const pt = toJS(ctl.metodo(porao, "peso_total", []));
+      if (pt !== total) return { ok: false, msg: `Depois de tentar ${nome}, peso_total() devia ser ${total}, mas veio ${pyfmt(pt)}.` };
+      const ln = toJS(ctl.builtin("len", [porao]));
+      if (ln !== n) return { ok: false, msg: `Depois de tentar ${nome}, len(porao) devia ser ${n}, mas veio ${pyfmt(ln)}.` };
+    }
+    return { ok: true, nota: log.join(" · ") };
+  } },
+
+{ id: "c3", zona: 2, titulo: "Equipamentos do ARGO",
+  intro: `<p>Cada equipamento gasta energia de um jeito, e a bateria do ARGO precisa saber o total antes de cada mergulho. Em vez de um monte de <code>if</code> por tipo, usamos <b>herança</b> e <b>polimorfismo</b>: cada classe sabe calcular a sua energia.</p>
+  <pre>class Lanterna(Equipamento):        # Lanterna herda de Equipamento
+    ...
+class Propulsor(Equipamento):
+    def __init__(self, nome, consumo, potencia):
+        super().__init__(nome, consumo)   # reaproveita o __init__ da base
+        self.potencia = potencia</pre>
+  <p>A estação vai testar a sua função com equipamentos que você nunca viu (outras subclasses), então ela precisa só chamar <code>energia</code>.</p>`,
+  task: `Crie <code>Equipamento(nome, consumo)</code> cujo <code>energia(minutos)</code> lança <code>NotImplementedError</code>; <code>Lanterna</code>, que gasta <code>consumo × minutos</code>; <code>Propulsor(nome, consumo, potencia)</code>, que gasta <code>consumo × minutos × potencia</code>; e a função <code>bateria_necessaria(equipamentos, minutos)</code> com a soma.`,
+  posludio: `try:
+    class _Camera(Equipamento):
+        def energia(self, minutos):
+            return 7 * minutos
+except NameError:
+    pass
+`,
+  forbid: [{ re: /isinstance|type\s*\(/, msg: "Não use isinstance nem type(): deixe cada classe calcular a própria energia (polimorfismo)." }],
+  starter: `class Equipamento:
+    def __init__(self, nome, consumo):
+        self.nome = nome
+        self.consumo = consumo
+
+    def energia(self, minutos):
+        raise NotImplementedError("cada equipamento calcula a sua energia")
+
+
+def bateria_necessaria(equipamentos, minutos):
+    return 0
+`,
+  solution: `class Equipamento:
+    def __init__(self, nome, consumo):
+        self.nome = nome
+        self.consumo = consumo
+
+    def energia(self, minutos):
+        raise NotImplementedError("cada equipamento calcula a sua energia")
+
+
+class Lanterna(Equipamento):
+    def energia(self, minutos):
+        return self.consumo * minutos
+
+
+class Propulsor(Equipamento):
+    def __init__(self, nome, consumo, potencia):
+        super().__init__(nome, consumo)
+        self.potencia = potencia
+
+    def energia(self, minutos):
+        return self.consumo * minutos * self.potencia
+
+
+def bateria_necessaria(equipamentos, minutos):
+    return sum(e.energia(minutos) for e in equipamentos)
+`,
+  hint: `Lanterna só precisa sobrescrever energia. Propulsor precisa de um __init__ com potencia que chama super().__init__(nome, consumo). Em bateria_necessaria, some e.energia(minutos) de cada equipamento, sem perguntar o tipo.`,
+  casos: [
+    { min: 10, eq: [["Lanterna", "Farol", 2], ["Propulsor", "Hélice", 3, 2], ["Lanterna", "Luz de busca", 5]] },
+    { min: 7, eq: [["Propulsor", "Turbina", 4, 3], ["Camera", "Câmera", 0], ["Lanterna", "Farolete", 1]] },
+  ].map(c => Object.assign(c, { mostra: `bateria_necessaria([${c.eq.map(e => e[0] === "Camera" ? "_Camera(\"Câmera\", 0)" : `${e[0]}(${e.slice(1).map(pyfmt).join(", ")})`).join(", ")}], ${c.min})` })),
+  rodar(ctl, sim, caso){
+    for (const n of ["Equipamento", "Lanterna", "Propulsor"]) ctl.exige(n, "classe");
+    ctl.exige("bateria_necessaria", "funcao");
+    for (const n of ["Lanterna", "Propulsor"]) if (!ctl.subclasse(n, "Equipamento")) return { ok: false, msg: `${n} precisa herdar de Equipamento: class ${n}(Equipamento):` };
+    const base = ctl.criar("Equipamento", [py("genérico"), py(1)]);
+    const ex = ctl.excecao(() => ctl.metodo(base, "energia", [py(5)]));
+    if (!ex || ex.cls !== "NotImplementedError") return { ok: false, msg: `Equipamento.energia deve lançar NotImplementedError (a classe base não sabe calcular), mas ${ex ? "lançou " + ex.texto : "não lançou nada"}.` };
+    let total = 0; const objs = [];
+    for (const e of caso.eq){
+      const [cls, nome, cons, pot] = e;
+      const o = cls === "Camera" ? ctl.criar("_Camera", [py(nome), py(cons)]) : ctl.criar(cls, e.slice(1).map(py));
+      const esperado = cls === "Lanterna" ? cons * caso.min : cls === "Propulsor" ? cons * caso.min * pot : 7 * caso.min;
+      if (cls !== "Camera"){ const en = toJS(ctl.metodo(o, "energia", [py(caso.min)])); if (en !== esperado) return { ok: false, msg: `${cls}(${e.slice(1).map(pyfmt).join(", ")}).energia(${caso.min}) deveria ser ${esperado}, mas deu ${pyfmt(en)}.` }; }
+      total += esperado; objs.push(o);
+    }
+    const r = toJS(ctl.funcao("bateria_necessaria", [ctl.lista(objs), py(caso.min)]));
+    if (r !== total) return { ok: false, msg: `bateria_necessaria deveria dar ${total}, mas deu ${pyfmt(r)}.${caso.eq.some(e => e[0] === "Camera") ? " Este teste inclui uma _Camera, subclasse que a estação criou." : ""}` };
+    return { ok: true, nota: `Energia necessária: ${total}` };
+  } },
+
+/* ===== Zona 4 ===== */
+{ id: "d1", zona: 3, titulo: "Fôlego",
+  intro: `<p>Agora o ARGO navega sozinho por túneis estreitos. A cada turno a estação chama <code>agir(self, sonar)</code> no seu piloto, e você devolve uma ação: <code>"N"</code>, <code>"S"</code>, <code>"L"</code>, <code>"O"</code>, <code>"R"</code> (respirar) ou <code>"P"</code> (parar um turno).</p>
+  <p>Cada movimento gasta 1 de oxigênio. Sobre uma <b>bolha de ar</b>, <code>"R"</code> enche o tanque de novo. Os túneis mudam a cada mergulho, mas sempre começam para leste e nunca se dividem.</p>
+  <p>Como o piloto é um objeto, ele <b>lembra</b> coisas entre um turno e outro: guarde em <code>self.ultimo</code> a última direção para não voltar pelo mesmo caminho.</p>`,
+  task: `Escreva a classe <code>Piloto</code> que segue o túnel até a base, respirando nas bolhas quando o tanque não estiver cheio. Os tesouros do caminho são recolhidos sozinhos.`,
+  piloto: true,
+  starter: `OPOSTO = {"N": "S", "S": "N", "L": "O", "O": "L"}
+
+class Piloto:
+    def __init__(self):
+        self.ultimo = "L"
+
+    def agir(self, sonar):
+        return "L"
+`,
+  solution: `OPOSTO = {"N": "S", "S": "N", "L": "O", "O": "L"}
+
+class Piloto:
+    def __init__(self):
+        self.ultimo = "L"
+
+    def agir(self, sonar):
+        if sonar.na_bolha() and sonar.oxigenio() < sonar.oxigenio_maximo():
+            return "R"
+        for d in [self.ultimo, "N", "L", "S", "O"]:
+            if d != OPOSTO[self.ultimo] and sonar.livre(d):
+                self.ultimo = d
+                return d
+        return "P"
+`,
+  hint: `Primeiro: se está na bolha e o oxigênio está abaixo do máximo, devolva "R". Depois tente as direções começando por self.ultimo, pulando OPOSTO[self.ultimo] (voltar). Na primeira livre, guarde em self.ultimo e devolva.`,
+  casos: M10_ROTAS.map(c => { const m = corredorM10(c); return { map: { grid: m.grid, start: m.start }, cfg: m.cfg }; }),
+  rodar(ctl, sim){ return rodarPiloto(ctl, sim, "Piloto", 300); } },
+
+{ id: "d2", zona: 3, titulo: "Patrulha das enguias",
+  intro: `<p>Enguias-elétricas patrulham poços que cruzam o túnel, subindo e descendo sem parar. Se uma enguia entrar na casa do ARGO (ou os dois trocarem de lugar), a missão acaba.</p>
+  <p>O sonar prevê o futuro: <code>sonar.criaturas_proximo_turno()</code> devolve um <b>conjunto</b> com as casas <code>(linha, coluna)</code> onde as enguias estarão depois deste turno. Se a casa para onde você vai estiver nesse conjunto, espere com <code>"P"</code>.</p>
+  <pre>l, c = sonar.posicao()
+(l + dl, c + dc) in perigo     # teste de pertinência em conjunto</pre>`,
+  task: `Escreva o <code>Piloto</code> que segue o túnel (como na missão anterior; aqui não há limite de oxigênio) e espera sempre que a próxima casa for ser ocupada por uma enguia.`,
+  piloto: true,
+  starter: `PASSO = {"N": (-1, 0), "S": (1, 0), "L": (0, 1), "O": (0, -1)}
+OPOSTO = {"N": "S", "S": "N", "L": "O", "O": "L"}
+
+class Piloto:
+    def __init__(self):
+        self.ultimo = "L"
+
+    def agir(self, sonar):
+        return "P"
+`,
+  solution: `PASSO = {"N": (-1, 0), "S": (1, 0), "L": (0, 1), "O": (0, -1)}
+OPOSTO = {"N": "S", "S": "N", "L": "O", "O": "L"}
+
+class Piloto:
+    def __init__(self):
+        self.ultimo = "L"
+
+    def agir(self, sonar):
+        l, c = sonar.posicao()
+        perigo = sonar.criaturas_proximo_turno()
+        for d in [self.ultimo, "N", "L", "S", "O"]:
+            if d != OPOSTO[self.ultimo] and sonar.livre(d):
+                dl, dc = PASSO[d]
+                if (l + dl, c + dc) in perigo:
+                    return "P"
+                self.ultimo = d
+                return d
+        return "P"
+`,
+  hint: `Escolha a direção como antes. Antes de devolvê-la, calcule a casa de destino com PASSO e veja se ela está em sonar.criaturas_proximo_turno(). Se estiver, devolva "P" sem mudar self.ultimo. Os poços cruzam o túnel em trechos retos: continuar na direção self.ultimo é sempre o certo ao passar por eles.`,
+  casos: M11_ROTAS.map(c => ({ map: corredorM11(c) })),
+  rodar(ctl, sim){ return rodarPiloto(ctl, sim, "Piloto", 300); } },
+
+{ id: "d3", zona: 3, titulo: "Ordens com ruído",
+  intro: `<p>O cabo acústico ficou ruidoso. As ordens agora chegam no formato <code>"L:3, S:2"</code> (direção, dois-pontos, quantidade, separados por vírgula), e algumas chegam corrompidas.</p>
+  <p>Uma ordem inválida não pode derrubar o ARGO: ela deve ser registrada e ignorada <b>inteira</b>. Para isso, crie uma exceção própria e trate cada caso:</p>
+  <pre>"L:3".partition(":")        # ('L', ':', '3')
+int("dois")                 # ValueError!
+try:
+    ...
+except OrdemInvalida as e:
+    erros.append(str(e))
+else:                       # só roda se NÃO houve exceção
+    ...</pre>`,
+  task: `Crie <code>OrdemInvalida(Exception)</code> e <code>interpretar(ordem)</code>, que devolve a lista de movimentos ou lança <code>OrdemInvalida("Direção inválida: X")</code> / <code>OrdemInvalida("Quantidade inválida: Q")</code> (quantidade que não é inteiro ou é ≤ 0). Depois, <code>processar(ordens)</code> devolve a tupla <code>(movimentos, erros)</code>: todos os movimentos das ordens válidas e a lista de mensagens das inválidas.`,
+  starter: `class OrdemInvalida(Exception):
+    pass
+
+
+def interpretar(ordem):
+    movimentos = []
+    for parte in ordem.split(","):
+        direcao, _, quantidade = parte.strip().partition(":")
+        # valide e acrescente os movimentos
+    return movimentos
+
+
+def processar(ordens):
+    movimentos, erros = [], []
+    return movimentos, erros
+`,
+  solution: `class OrdemInvalida(Exception):
+    pass
+
+
+def interpretar(ordem):
+    movimentos = []
+    for parte in ordem.split(","):
+        direcao, _, quantidade = parte.strip().partition(":")
+        if direcao not in ("N", "S", "L", "O"):
+            raise OrdemInvalida(f"Direção inválida: {direcao}")
+        try:
+            vezes = int(quantidade)
+        except ValueError:
+            raise OrdemInvalida(f"Quantidade inválida: {quantidade}")
+        if vezes <= 0:
+            raise OrdemInvalida(f"Quantidade inválida: {quantidade}")
+        movimentos += [direcao] * vezes
+    return movimentos
+
+
+def processar(ordens):
+    movimentos, erros = [], []
+    for ordem in ordens:
+        try:
+            novos = interpretar(ordem)
+        except OrdemInvalida as e:
+            erros.append(str(e))
+        else:
+            movimentos += novos
+    return movimentos, erros
+`,
+  hint: `Em interpretar: se a direção não for N, S, L ou O, raise OrdemInvalida(f"Direção inválida: {direcao}"). Converta a quantidade dentro de try/except ValueError e, no except, lance OrdemInvalida(f"Quantidade inválida: {quantidade}"); faça o mesmo se for ≤ 0. Em processar, chame interpretar dentro de try; no except guarde str(e); no else some os movimentos.`,
+  casos: M12_CASOS.map(c => {
+    const movs = [], erros = [];
+    for (const o of c.ordens){ const r = interpretarJS(o); if (r.erro) erros.push(r.erro); else movs.push(...r.movs); }
+    return { ordens: c.ordens, movs, erros, map: rotaMapa(movs, c.marcas), nota: `Ordens: ${pyfmt(c.ordens)}` };
+  }),
+  rodar(ctl, sim, caso){
+    ctl.exige("OrdemInvalida", "classe"); ctl.exige("interpretar", "funcao"); ctl.exige("processar", "funcao");
+    if (!Sk.misceval.isTrue(Sk.builtin.issubclass(ctl.global("OrdemInvalida"), Sk.builtin.Exception))) return { ok: false, msg: "OrdemInvalida precisa herdar de Exception." };
+    for (const o of caso.ordens){
+      const esp = interpretarJS(o);
+      if (!esp.erro) continue;
+      const ex = ctl.excecao(() => ctl.funcao("interpretar", [py(o)]));
+      if (!ex) return { ok: false, msg: `interpretar(${pyfmt(o)}) deveria lançar OrdemInvalida("${esp.erro}"), mas não lançou nada.` };
+      if (!ex.eh("OrdemInvalida")) return { ok: false, msg: `interpretar(${pyfmt(o)}) lançou ${ex.texto}. Deveria ser OrdemInvalida("${esp.erro}").` };
+      const s = toJS(ctl.builtin("str", [ex.obj]));
+      if (s !== esp.erro) return { ok: false, msg: `A mensagem de interpretar(${pyfmt(o)}) deveria ser ${pyfmt(esp.erro)}, mas veio ${pyfmt(s)}.` };
+    }
+    const r = ctl.funcao("processar", [listaStr(caso.ordens)]); const v = toJS(r);
+    if (!Array.isArray(v) || v.length !== 2) return { ok: false, msg: `processar precisa devolver a tupla (movimentos, erros), mas devolveu ${curto(ctl.repr(r))}.` };
+    const [movs, erros] = v;
+    if (!igual(erros, caso.erros)) return { ok: false, msg: `Erros registrados: ${curto(pyfmt(erros), 240)}. Esperado: ${pyfmt(caso.erros)}.` };
+    if (!igual(movs, caso.movs)){ mostrarRota(sim, Array.isArray(movs) ? movs : []); return { ok: false, msg: `Movimentos: ${curto(pyfmt(movs))}. Esperado: ${curto(pyfmt(caso.movs))}.` }; }
+    const res = executarRota(sim, movs); if (res.ok) res.nota = `${caso.erros.length} ordem(ns) descartada(s): ${caso.erros.join(" · ")}`; return res;
+  } },
+
+/* ===== Zona 5 ===== */
+{ id: "e1", zona: 4, titulo: "Câmaras submersas",
+  intro: `<p>As cavernas abissais são cheias de câmaras isoladas por rocha. Uma <b>câmara</b> é um grupo de casas de água ligadas entre si (norte, sul, leste, oeste). A equipe quer saber quantas existem.</p>
+  <p>A técnica clássica é a <b>inundação recursiva</b>: ao achar uma casa de água, "inunde" ela (marque como visitada) e chame a mesma função para os quatro vizinhos. Quando a recursão termina, a câmara inteira foi marcada.</p>
+  <pre>grade = [list(linha) for linha in mapa]   # cópia que dá para alterar
+
+def inundar(l, c):
+    if grade[l][c] == "#":    # caso base: rocha ou já inundada
+        return
+    grade[l][c] = "#"
+    ...                       # chame inundar nos vizinhos</pre>`,
+  task: `Escreva <code>contar_camaras(mapa)</code> que devolve o número de câmaras. Use uma função <b>recursiva</b>.`,
+  require: [{ test: usaRecursao, msg: "Esta missão é sobre recursão: crie uma função que chame a si mesma (por exemplo, inundar)." }],
+  analise: true,
+  starter: `def contar_camaras(mapa):
+    grade = [list(linha) for linha in mapa]
+
+    def inundar(l, c):
+        pass
+
+    total = 0
+    return total
+`,
+  solution: `def contar_camaras(mapa):
+    grade = [list(linha) for linha in mapa]
+
+    def inundar(l, c):
+        if grade[l][c] == "#":
+            return
+        grade[l][c] = "#"
+        for dl, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            inundar(l + dl, c + dc)
+
+    total = 0
+    for l in range(len(grade)):
+        for c in range(len(grade[l])):
+            if grade[l][c] != "#":
+                inundar(l, c)
+                total += 1
+    return total
+`,
+  hint: `Percorra todas as casas. Quando achar uma que não é "#", chame inundar(l, c) (ela transforma a câmara inteira em "#") e some 1 no total. Dentro de inundar: se for "#", return; senão marque e chame inundar nos 4 vizinhos.`,
+  casos: M13_MAPAS.map(g => { const s = g.findIndex(r => r.includes(".")); return { map: { grid: g, start: [g[s].indexOf("."), s] } }; }),
+  rodar(ctl, sim, caso){
+    ctl.exige("contar_camaras", "funcao");
+    const r = toJS(ctl.funcao("contar_camaras", [listaStr(caso.map.grid)]));
+    const n = contarCamarasJS(caso.map.grid);
+    if (r !== n) return { ok: false, msg: `contar_camaras devolveu ${pyfmt(r)}, mas há ${n} câmaras neste mapa.` };
+    return { ok: true, nota: `${n} câmaras encontradas.`, camaras: true };
+  } },
+
+{ id: "e2", zona: 4, titulo: "Varredura em espiral",
+  intro: `<p>No salão principal do <i>Aurora</i>, o ARGO precisa varrer cada casa em <b>espiral</b>: começa no canto de cima à esquerda, vai para a direita, desce, volta pela base, sobe, e vai fechando para dentro.</p>
+  <p>Em vez de montar uma lista enorme, escreva um <b>gerador</b>: uma função com <code>yield</code> que entrega uma posição de cada vez, só quando pedem.</p>
+  <pre>def contagem(n):
+    for i in range(n):
+        yield i          # pausa aqui e entrega i
+
+for x in contagem(3):    # 0, 1, 2
+    ...</pre>
+  <p>As posições são relativas ao salão: <code>(0, 0)</code> é o canto de cima à esquerda e o salão tem <code>altura</code> linhas e <code>largura</code> colunas.</p>`,
+  task: `Escreva o gerador <code>espiral(altura, largura)</code> que entrega as tuplas <code>(linha, coluna)</code> na ordem da espiral, passando por todas as casas exatamente uma vez. O ARGO seguirá as posições geradas.`,
+  require: [{ re: /\byield\b/, msg: "espiral precisa ser um gerador: use yield para entregar cada posição." }],
+  starter: `def espiral(altura, largura):
+    topo, base = 0, altura - 1
+    esq, dir = 0, largura - 1
+    while topo <= base and esq <= dir:
+        # entregue a borda de cima, a direita, a de baixo e a esquerda
+        # depois feche um anel para dentro
+        break
+`,
+  solution: `def espiral(altura, largura):
+    topo, base = 0, altura - 1
+    esq, dir = 0, largura - 1
+    while topo <= base and esq <= dir:
+        for c in range(esq, dir + 1):
+            yield (topo, c)
+        for l in range(topo + 1, base + 1):
+            yield (l, dir)
+        if topo < base:
+            for c in range(dir - 1, esq - 1, -1):
+                yield (base, c)
+        if esq < dir:
+            for l in range(base - 1, topo, -1):
+                yield (l, esq)
+        topo, base, esq, dir = topo + 1, base - 1, esq + 1, dir - 1
+`,
+  hint: `Quatro laços por anel: borda de cima (esquerda → direita), lado direito (descendo), borda de baixo (direita → esquerda, só se topo < base) e lado esquerdo (subindo, só se esq < dir). No fim do anel, aperte: topo+1, base-1, esq+1, dir-1. Os "só se" evitam repetir casas quando sobra uma linha ou coluna.`,
+  casos: M14_TAM.map(([h, w], i) => ({ h, w, map: salaEspiral(h, w, 30 + i), nota: `espiral(${h}, ${w})` })),
+  rodar(ctl, sim, caso){
+    ctl.exige("espiral", "funcao");
+    const r = ctl.funcao("espiral", [py(caso.h), py(caso.w)]);
+    if (tipoPy(ctl, r) !== "generator") return { ok: false, msg: `espiral precisa ser um gerador (com yield), mas devolveu ${curto(ctl.repr(r))}.` };
+    const v = iterar(ctl, r, caso.h * caso.w);
+    const esp = espiralJS(caso.h, caso.w);
+    const movs = [];
+    for (let k = 0; k < v.length; k++){
+      const p = v[k];
+      if (!Array.isArray(p) || p.length !== 2) return { ok: false, msg: `O gerador entregou ${pyfmt(p)}; cada item deve ser uma tupla (linha, coluna).` };
+      if (k >= esp.length) { mostrarRota(sim, movs); return { ok: false, msg: `O gerador entregou mais de ${esp.length} posições: o salão tem só ${caso.h} × ${caso.w} casas.` }; }
+      if (!igual(p, esp[k])){ mostrarRota(sim, movs); return { ok: false, msg: `A posição nº ${k + 1} deveria ser ${pyfmt({ __tuple: esp[k] })}, mas veio ${pyfmt({ __tuple: p })}.`, destaque: [[p[1] + 1, p[0] + 1]] }; }
+      if (k > 0){ const [a, b] = v[k - 1]; movs.push(p[0] > a ? "S" : p[0] < a ? "N" : p[1] > b ? "L" : "O"); }
+    }
+    if (v.length < esp.length){ mostrarRota(sim, movs); return { ok: false, msg: `O gerador parou depois de ${v.length} posições, mas o salão tem ${esp.length} casas.` }; }
+    const res = executarRota(sim, movs); if (res.ok) res.nota = `espiral(${caso.h}, ${caso.w}): ${esp.length} posições`; return res;
+  } },
+
+{ id: "e3", zona: 4, titulo: "Rotas possíveis",
+  intro: `<p>Para planejar mergulhos de reserva, a equipe quer saber <b>quantas rotas diferentes</b> levam do ponto de partida até a base, sem passar duas vezes pela mesma casa.</p>
+  <p>Isso pede <b>backtracking</b>: explore um caminho, e ao voltar da recursão <b>desfaça</b> a marcação para que outros caminhos possam usar aquela casa.</p>
+  <pre>visitados.add((l, c))
+total = ...            # explore os 4 vizinhos
+visitados.remove((l, c))   # desfaz: libera a casa para outras rotas</pre>`,
+  task: `Escreva <code>contar_rotas(mapa, inicio, fim)</code> (posições como tuplas <code>(linha, coluna)</code>) que devolve quantos caminhos simples existem de <code>inicio</code> até <code>fim</code>. Uma rota termina quando chega ao fim.`,
+  require: [{ test: usaRecursao, msg: "Esta missão é sobre backtracking: use uma função recursiva." }],
+  analise: true,
+  starter: `def contar_rotas(mapa, inicio, fim):
+    visitados = set()
+
+    def explorar(l, c):
+        return 0
+
+    return explorar(inicio[0], inicio[1])
+`,
+  solution: `def contar_rotas(mapa, inicio, fim):
+    visitados = set()
+
+    def explorar(l, c):
+        if mapa[l][c] == "#" or (l, c) in visitados:
+            return 0
+        if (l, c) == fim:
+            return 1
+        visitados.add((l, c))
+        total = 0
+        for dl, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            total += explorar(l + dl, c + dc)
+        visitados.remove((l, c))
+        return total
+
+    return explorar(inicio[0], inicio[1])
+`,
+  hint: `Casos base: rocha ou casa já visitada → 0 rotas; chegou no fim → 1 rota. Senão: marque a casa, some explorar() dos 4 vizinhos, desmarque (visitados.remove) e devolva a soma.`,
+  casos: M15_MAPAS.map(rows => { const map = mapaDe(rows); const fy = rows.findIndex(r => r.includes("@")); return { map, fim: [rows[fy].indexOf("@"), fy] }; }),
+  rodar(ctl, sim, caso){
+    ctl.exige("contar_rotas", "funcao");
+    const [sx, sy] = caso.map.start, [fx, fy] = caso.fim;
+    const r = toJS(ctl.funcao("contar_rotas", [listaStr(caso.map.grid), tup([sy, sx]), tup([fy, fx])]));
+    const n = contarRotasJS(caso.map.grid, caso.map.start, caso.fim);
+    if (r !== n) return { ok: false, msg: `contar_rotas devolveu ${pyfmt(r)}, mas existem ${n} rotas neste mapa.`, destaque: [[sx, sy], [fx, fy]] };
+    return { ok: true, nota: `${n} rotas diferentes.`, destaque: [[sx, sy], [fx, fy]] };
+  } },
+
+/* ===== Zona 6 ===== */
+{ id: "f1", zona: 5, titulo: "Atalho pelas correntes",
+  intro: `<p>Na fossa, as correntes podem ajudar ou atrapalhar. A equipe quer a rota com o <b>menor número de comandos</b> até a base, aproveitando os empurrões (as mesmas regras do simulador da Zona 1, mas aqui bater na rocha é proibido).</p>
+  <p>O algoritmo certo é a <b>busca em largura</b> (BFS): explore primeiro tudo que fica a 1 comando, depois a 2, e assim por diante. A primeira vez que chegar na base, é o menor caminho. Uma <code>deque</code> faz de fila eficiente:</p>
+  <pre>from collections import deque
+fila = deque([(inicio, [])])   # (posição, rota até ela)
+pos, rota = fila.popleft()
+fila.append((nova, rota + [d]))</pre>`,
+  task: `Escreva <code>menor_rota(mapa, inicio, fim)</code> que devolve a lista de comandos mais curta de <code>inicio</code> até <code>fim</code> (tuplas <code>(linha, coluna)</code>). O ARGO vai executar a sua rota.`,
+  starter: `from collections import deque
+
+PASSO = {"N": (-1, 0), "S": (1, 0), "L": (0, 1), "O": (0, -1)}
+CORRENTE = {">": "L", "<": "O", "^": "N", "v": "S"}
+
+def andar(mapa, l, c, d):
+    # devolve a posição depois do comando d (com corrente), ou None se for rocha
+    return None
+
+def menor_rota(mapa, inicio, fim):
+    return []
+`,
+  solution: `from collections import deque
+
+PASSO = {"N": (-1, 0), "S": (1, 0), "L": (0, 1), "O": (0, -1)}
+CORRENTE = {">": "L", "<": "O", "^": "N", "v": "S"}
+
+def andar(mapa, l, c, d):
+    dl, dc = PASSO[d]
+    if mapa[l + dl][c + dc] == "#":
+        return None
+    l, c = l + dl, c + dc
+    if mapa[l][c] in CORRENTE:
+        dl, dc = PASSO[CORRENTE[mapa[l][c]]]
+        if mapa[l + dl][c + dc] != "#":
+            l, c = l + dl, c + dc
+    return (l, c)
+
+def menor_rota(mapa, inicio, fim):
+    fila = deque([(inicio, [])])
+    vistos = {inicio}
+    while fila:
+        pos, rota = fila.popleft()
+        if pos == fim:
+            return rota
+        for d in PASSO:
+            nova = andar(mapa, pos[0], pos[1], d)
+            if nova and nova not in vistos:
+                vistos.add(nova)
+                fila.append((nova, rota + [d]))
+    return []
+`,
+  hint: `Comece com fila = deque([(inicio, [])]) e vistos = {inicio}. Enquanto houver fila: tire o primeiro (popleft). Se for o fim, devolva a rota. Senão, para cada direção, calcule a nova posição com andar; se não for None e não estiver em vistos, marque e ponha na fila com rota + [d].`,
+  casos: M16_MAPAS.map(m => ({ map: m })),
+  rodar(ctl, sim, caso){
+    ctl.exige("menor_rota", "funcao");
+    const [sx, sy] = caso.map.start; const fy = caso.map.grid.findIndex(r => r.includes("@")), fx = caso.map.grid[fy].indexOf("@");
+    const r = ctl.funcao("menor_rota", [listaStr(caso.map.grid), tup([sy, sx]), tup([fy, fx])]); const v = toJS(r);
+    if (!Array.isArray(v)) return { ok: false, msg: `menor_rota precisa devolver uma lista de comandos, mas devolveu ${curto(ctl.repr(r))}.` };
+    const res = executarRota(sim, v); if (!res.ok) return res;
+    const best = menorRota(caso.map.grid, sx, sy, fx, fy);
+    if (v.length > best) return { ok: false, msg: `A rota chegou em ${v.length} comandos, mas dá para chegar em ${best}. Use busca em largura para garantir o menor caminho.` };
+    return { ok: true, nota: `Rota ótima: ${v.length} comandos (${compactarJS(v)})` };
+  } },
+
+{ id: "f2", zona: 5, titulo: "A melhor carga",
+  intro: `<p>O porão aguenta pouco peso e há tesouros demais. Qual combinação vale mais sem passar do limite? Testar todas as combinações dá certo com 6 peças, mas com 22 são mais de 4 milhões, e o computador do ARGO não aguenta.</p>
+  <p><b>Programação dinâmica</b> resolve: <code>melhor[cap]</code> guarda a melhor carga possível para cada capacidade de 0 até o limite. Cada tesouro novo tenta melhorar essas respostas, percorrendo as capacidades <b>de trás para frente</b> (assim cada peça é usada uma vez só).</p>
+  <pre>melhor = [(0, [])] * (capacidade + 1)   # (valor, nomes)
+for cap in range(capacidade, t.peso - 1, -1):
+    valor, nomes = melhor[cap - t.peso]
+    ...</pre>
+  <p>A classe <code>Tesouro</code> já vem pronta (veja a referência).</p>`,
+  task: `Escreva <code>melhor_carga(tesouros, capacidade)</code> que devolve a <b>lista de nomes</b> da combinação de maior valor total com peso total ≤ capacidade.`,
+  preludio: TESOURO_PY,
+  starter: `def melhor_carga(tesouros, capacidade):
+    melhor = [(0, [])] * (capacidade + 1)
+    for t in tesouros:
+        pass
+    return melhor[capacidade][1]
+`,
+  solution: `def melhor_carga(tesouros, capacidade):
+    melhor = [(0, [])] * (capacidade + 1)
+    for t in tesouros:
+        for cap in range(capacidade, t.peso - 1, -1):
+            valor, nomes = melhor[cap - t.peso]
+            if valor + t.valor > melhor[cap][0]:
+                melhor[cap] = (valor + t.valor, nomes + [t.nome])
+    return melhor[capacidade][1]
+`,
+  hint: `Para cada tesouro t e cada cap de capacidade até t.peso (descendo): a opção "levar t" vale melhor[cap - t.peso][0] + t.valor. Se isso for maior que melhor[cap][0], troque melhor[cap] por (esse valor, nomes + [t.nome]). Use nomes + [...] (lista nova), não append, para não mexer nas outras respostas.`,
+  casos: M17_CASOS.map(c => Object.assign(c, { mostra: `melhor_carga([${c.itens.length} tesouros], ${c.cap})<br>` + c.itens.map(([n, v, p]) => `${n}: ${v} moedas, ${p} kg`).join(" · ") })),
+  rodar(ctl, sim, caso){
+    ctl.exige("melhor_carga", "funcao");
+    const objs = caso.itens.map(([n, v, p]) => ctl.criar("Tesouro", [py(n), py(v), py(p)]));
+    const r = ctl.funcao("melhor_carga", [ctl.lista(objs), py(caso.cap)]); const v = toJS(r);
+    if (!Array.isArray(v) || !v.every(x => typeof x === "string")) return { ok: false, msg: `melhor_carga precisa devolver uma lista de nomes, mas devolveu ${curto(ctl.repr(r))}.` };
+    if (new Set(v).size !== v.length) return { ok: false, msg: `A carga repete peças: ${curto(pyfmt(v))}. Cada tesouro só existe uma vez.` };
+    const mapa = Object.fromEntries(caso.itens.map(i => [i[0], i]));
+    const desconhecido = v.find(n => !mapa[n]); if (desconhecido) return { ok: false, msg: `Não existe tesouro chamado ${pyfmt(desconhecido)}.` };
+    const peso = v.reduce((a, n) => a + mapa[n][2], 0), valor = v.reduce((a, n) => a + mapa[n][1], 0);
+    if (peso > caso.cap) return { ok: false, msg: `Essa carga pesa ${peso} kg e passa do limite de ${caso.cap} kg.` };
+    const best = mochilaJS(caso.itens, caso.cap);
+    if (valor < best) return { ok: false, msg: `Sua carga vale ${valor} moedas, mas dá para levar ${best} moedas com ${caso.cap} kg.` };
+    return { ok: true, nota: `${v.length} peças, ${peso} kg, ${valor} moedas: ${v.join(", ")}` };
+  } },
+
+{ id: "f3", zona: 5, titulo: "Expedição final",
+  intro: `<p>O fundo da fossa guarda a câmara selada do <i>Aurora</i>. Portas (<code>A</code>, <code>B</code>, <code>C</code>) só abrem para quem já pegou a chave de mesma letra (<code>a</code>, <code>b</code>, <code>c</code>), e as correntes continuam empurrando. Uma porta fechada também bloqueia o empurrão da corrente.</p>
+  <p>O truque: o <b>estado</b> da busca não é só a posição, mas a posição <b>e as chaves que você já tem</b>. A mesma casa com chaves diferentes é outro estado. Um <code>frozenset</code> (conjunto imutável) pode entrar em tuplas e em conjuntos:</p>
+  <pre>chaves = frozenset()
+chaves | {"a"}                # frozenset({'a'})
+vistos = {(inicio, frozenset())}</pre>`,
+  task: `Escreva <code>rota_final(mapa, inicio)</code> que devolve a lista de comandos mais curta de <code>inicio</code> até a base <code>"@"</code>, pegando as chaves necessárias pelo caminho.`,
+  starter: `from collections import deque
+
+PASSO = {"N": (-1, 0), "S": (1, 0), "L": (0, 1), "O": (0, -1)}
+CORRENTE = {">": "L", "<": "O", "^": "N", "v": "S"}
+
+def bloqueado(mapa, l, c, chaves):
+    casa = mapa[l][c]
+    return casa == "#" or (casa in "ABC" and casa.lower() not in chaves)
+
+def rota_final(mapa, inicio):
+    return []
+`,
+  solution: `from collections import deque
+
+PASSO = {"N": (-1, 0), "S": (1, 0), "L": (0, 1), "O": (0, -1)}
+CORRENTE = {">": "L", "<": "O", "^": "N", "v": "S"}
+
+def bloqueado(mapa, l, c, chaves):
+    casa = mapa[l][c]
+    return casa == "#" or (casa in "ABC" and casa.lower() not in chaves)
+
+def andar(mapa, l, c, d, chaves):
+    dl, dc = PASSO[d]
+    if bloqueado(mapa, l + dl, c + dc, chaves):
+        return None
+    l, c = l + dl, c + dc
+    if mapa[l][c] in CORRENTE:
+        dl, dc = PASSO[CORRENTE[mapa[l][c]]]
+        if not bloqueado(mapa, l + dl, c + dc, chaves):
+            l, c = l + dl, c + dc
+    return (l, c)
+
+def rota_final(mapa, inicio):
+    fila = deque([(inicio, frozenset(), [])])
+    vistos = {(inicio, frozenset())}
+    while fila:
+        pos, chaves, rota = fila.popleft()
+        if mapa[pos[0]][pos[1]] == "@":
+            return rota
+        for d in PASSO:
+            nova = andar(mapa, pos[0], pos[1], d, chaves)
+            if nova is None:
+                continue
+            casa = mapa[nova[0]][nova[1]]
+            novas = chaves | {casa} if casa in "abc" else chaves
+            if (nova, novas) not in vistos:
+                vistos.add((nova, novas))
+                fila.append((nova, novas, rota + [d]))
+    return []
+`,
+  hint: `É a BFS da missão "Atalho pelas correntes" com um item a mais no estado. A fila guarda (posição, chaves, rota) e vistos guarda (posição, chaves). Ao andar, use bloqueado com as chaves atuais (também para o empurrão). Se a casa nova for uma chave minúscula, o novo conjunto é chaves | {casa}.`,
+  casos: M18_MAPAS.map(rows => ({ map: mapaDe(rows) })),
+  rodar(ctl, sim, caso){
+    ctl.exige("rota_final", "funcao");
+    const [sx, sy] = caso.map.start;
+    const r = ctl.funcao("rota_final", [listaStr(caso.map.grid), tup([sy, sx])]); const v = toJS(r);
+    if (!Array.isArray(v)) return { ok: false, msg: `rota_final precisa devolver uma lista de comandos, mas devolveu ${curto(ctl.repr(r))}.` };
+    const res = executarRota(sim, v); if (!res.ok) return res;
+    const best = menorRotaChaves(caso.map.grid, sx, sy);
+    if (v.length > best) return { ok: false, msg: `A rota chegou em ${v.length} comandos, mas dá para chegar em ${best}.` };
+    return { ok: true, nota: `Rota ótima: ${v.length} comandos, chaves: ${[...sim.chaves].sort().join(", ") || "nenhuma"}` };
+  } },
+];
+MISSOES.forEach(m => { m.par = linhasDeCodigo(m.solution) + 1; });
+
+</script>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem("ab:"+k); return v===null ? d : JSON.parse(v);}catch(e){return d;} },
+  set(k, v){ try{ localStorage.setItem("ab:"+k, JSON.stringify(v)); }catch(e){} }
+};
+let stars = store.get("stars", {});
+let speed = store.get("speed", 160);
+let runId = 0;
+let cur = null, ready = false, running = false, abort = false, attempts = 0, shownMap = 0, mapStatus = [];
+const isPhone = () => window.matchMedia("(max-width:1020px)").matches;
+const starsFor = (m, code) => { const n = linhasDeCodigo(code); return n <= m.par ? 3 : n <= Math.ceil(m.par*1.4) ? 2 : 1; };
+const unlocked = i => i===0 || (stars[MISSOES[i-1].id]||0) > 0;
+const totalStars = () => Object.values(stars).reduce((a,b)=>a+b,0);
+const starsHtml = n => [1,2,3].map(i=>`<span class="${i<=n?"on":""}">★</span>`).join("");
+function updateStarCount(){ $("#starCount").textContent = `${totalStars()} / ${MISSOES.length*3}`; }
+const PROF = ["40 m", "350 m", "1.200 m", "2.600 m", "4.800 m", "10.900 m"];
+
+/* ---------------- mapa de missões ---------------- */
+function showLevels(){
+  stopRun(); cur = null; store.set("cur", null);
+  const nextI = MISSOES.findIndex(m=>!(stars[m.id]>0));
+  $("#view").innerHTML = `<div class="levels">
+    <div class="card intro-card"><div><p><strong>O ARGO desce ao fundo do mar atrás do naufrágio do <i>Aurora</i>.</strong> Quem escreve o software do submarino é você, em Python: funções que leem ordens, classes que organizam a carga, pilotos que decidem a cada turno e algoritmos que acham o melhor caminho.</p>
+    <p class="pre">Pré-requisito: o básico de Python (variáveis, if, laços, listas e funções), como no Caderno de Python ou no Robô Py.</p></div>
+    ${nextI>=0?`<button class="btn primary" id="playNext">${totalStars()?"Continuar":"Começar"}: missão ${nextI+1} →</button>`:`<b>Você completou a expedição!</b>`}</div>
+    ${ZONAS.map((z,zi)=>`<section class="card world"><div class="prof"><small>PROF.</small>${PROF[zi]}</div><h2><span>Zona ${zi+1}</span>${esc(z.titulo)}</h2><p>${esc(z.ideia)}</p><div class="tiles">
+      ${MISSOES.map((m,i)=>({m,i})).filter(o=>o.m.zona===zi).map(({m,i})=>`<button class="tile ${i===nextI?"next":""}" data-i="${i}" ${unlocked(i)?"":"disabled"}><span class="n">MISSÃO ${i+1}${unlocked(i)?"":" · 🔒"}</span><b>${esc(m.titulo)}</b><span class="s">${starsHtml(stars[m.id]||0)}</span></button>`).join("")}
+    </div></section>`).join("")}
+  </div>`;
+  $("#view").querySelectorAll(".tile").forEach(b=>b.onclick=()=>openLevel(+b.dataset.i));
+  const p = $("#playNext"); if (p) p.onclick = ()=>openLevel(nextI);
+  window.scrollTo({top:0});
+}
+$("#levelsBtn").onclick = showLevels;
+
+/* ---------------- missão ---------------- */
+let codeEl, gutterEl, fbEl;
+function referencia(m){
+  const partes = [];
+  if (m.piloto){
+    partes.push(`<div><b>Ações que agir pode devolver</b><div class="acts"><span>"N" norte</span><span>"S" sul</span><span>"L" leste</span><span>"O" oeste</span>${m.id==="d1"?`<span>"R" respirar (na bolha)</span>`:""}<span>"P" parar</span></div></div>`);
+    partes.push(`<div><b>O que o sonar informa</b><div class="reftab">${SONAR.map(([n,t,d])=>`<code>${esc(n)}</code><span class="t">${t}</span><span>${esc(d)}</span>`).join("")}</div></div>`);
+  }
+  if (m.preludio) partes.push(`<div><b>Código que a estação já fornece</b> (vem junto do seu, não precisa copiar)<pre>${esc(m.preludio.trim())}</pre></div>`);
+  partes.push(`<div><b>Coordenadas</b>: posições são tuplas <code>(linha, coluna)</code>, contadas a partir de 0 no canto de cima à esquerda. Norte diminui a linha; leste aumenta a coluna.</div>`);
+  return `<details class="ref"><summary>Referência da estação</summary><div class="refbody">${partes.join("")}</div></details>`;
+}
+function openLevel(i){
+  stopRun();
+  if (!unlocked(i)) return showLevels();
+  cur = i; store.set("cur", i); attempts = 0; shownMap = 0;
+  const m = MISSOES[i];
+  mapStatus = m.casos.map(()=>null);
+  $("#view").innerHTML = ""; $("#view").appendChild($("#gameTpl").content.cloneNode(true));
+  codeEl = $("#code"); gutterEl = $("#gutter"); fbEl = $("#feedback");
+  const z = ZONAS[m.zona];
+  $("#mission").innerHTML = `<div class="eyebrow">Zona ${m.zona+1} · ${esc(z.titulo)} · Missão ${i+1}<span class="depth">${PROF[m.zona]}</span></div>
+    <h1>${esc(m.titulo)}</h1>${m.intro}
+    <div class="task"><strong>Sua tarefa</strong><p>${m.task}</p></div>
+    ${referencia(m)}
+    <div class="goal"><span>3 estrelas: <b>até ${m.par} linhas</b> (sem contar comentários, imports e linhas com @)</span>${m.casos.length>1?`<span>Testado em <b>${m.casos.length} cenários</b></span>`:""}<span>Melhor: <b style="color:var(--star)">${"★".repeat(stars[m.id]||0)||"—"}</b></span></div>`;
+  codeEl.value = store.get("code:"+m.id, m.starter);
+  setupEditor(); setupKeys();
+  document.querySelectorAll(".speed button").forEach(b=>{
+    b.setAttribute("aria-pressed", +b.dataset.speed===speed);
+    b.onclick = ()=>{ speed = +b.dataset.speed; store.set("speed", speed); document.querySelectorAll(".speed button").forEach(x=>x.setAttribute("aria-pressed", x===b)); };
+  });
+  $("#run").onclick = runAll;
+  $("#stop").onclick = ()=>{ abort = true; };
+  $("#reset").onclick = ()=>{ codeEl.value = m.starter; syncGutter(); saveCode(); fbEl.innerHTML=""; resetBoard(); };
+  $("#run").disabled = !ready;
+  $("#engine").textContent = ready ? "Python pronto" : "carregando Python…";
+  renderLegend(m); renderMaps(); resetBoard();
+  window.scrollTo({top:0});
+}
+function renderLegend(m){
+  const tem = ch => m.casos.some(c => c.map && c.map.grid.some(r => r.includes(ch)));
+  const it = [];
+  if (m.casos.some(c=>c.map) && !m.analise) it.push(`<span><i style="background:var(--accent)"></i>ARGO</span>`);
+  if (tem("@")) it.push(`<span><i style="background:#fff;border:3px solid var(--cool);border-radius:50%"></i>Base</span>`);
+  if (tem("$")) it.push(`<span><i style="background:var(--gold);transform:rotate(45deg) scale(.8)"></i>Tesouro</span>`);
+  if (m.casos.some(c=>c.map)) it.push(`<span><i style="background:var(--rock-hi)"></i>Rocha</span>`);
+  if (["<",">","^","v"].some(tem)) it.push(`<span><i style="background:none;color:var(--current);font-weight:700;width:auto;height:auto">›</i>Corrente</span>`);
+  if (tem("o")) it.push(`<span><i style="border:2px solid var(--bubble);border-radius:50%"></i>Bolha de ar</span>`);
+  if (tem("X")) it.push(`<span><i style="background:var(--jelly);border-radius:50% 50% 30% 30%"></i>Medusa</span>`);
+  if (m.casos.some(c=>c.map && c.map.criaturas)) it.push(`<span><i style="background:var(--eel);border-radius:6px"></i>Enguia</span>`);
+  if (tem("A")) it.push(`<span><i style="border:2px solid var(--key-a)"></i>Porta e chave</span>`);
+  $("#legend").innerHTML = it.join("");
+}
+function saveCode(){ if (cur!==null && codeEl) store.set("code:"+MISSOES[cur].id, codeEl.value); }
+function casoLabel(m, k){ return m.casos[k].map ? `Cenário ${k+1}` : `Teste ${k+1}`; }
+function renderMaps(){
+  const m = MISSOES[cur], box = $("#maps");
+  if (m.casos.length < 2){ box.innerHTML = ""; return; }
+  box.innerHTML = m.casos.map((_,k)=>`<button data-m="${k}" aria-current="${k===shownMap}" class="${mapStatus[k]===true?"ok":mapStatus[k]===false?"bad":""}">${esc(casoLabel(m,k))}</button>`).join("");
+  box.querySelectorAll("button").forEach(b=>b.onclick=()=>{ if (running) return; shownMap = +b.dataset.m; renderMaps(); resetBoard(); });
+}
+
+/* ---------------- desenho ---------------- */
+const SUB_SVG = `<svg viewBox="0 0 100 100" aria-hidden="true">
+  <path d="M8 50 L-2 38 L-2 62Z" fill="#c75a41"/>
+  <rect x="34" y="22" width="22" height="16" rx="5" fill="#ff7b5c"/><rect x="44" y="12" width="3" height="12" fill="#84adb3"/>
+  <ellipse cx="50" cy="52" rx="40" ry="20" fill="#ff7b5c"/><ellipse cx="50" cy="58" rx="36" ry="10" fill="#c75a41" opacity=".55"/>
+  <circle cx="70" cy="50" r="10" fill="#bff3ff" stroke="#062433" stroke-width="3"/><circle cx="73" cy="47" r="3" fill="#fff"/>
+  <circle cx="44" cy="50" r="4" fill="#062433"/><circle cx="31" cy="50" r="4" fill="#062433"/>
+  <path d="M90 46 L100 42 L100 58 L90 54Z" fill="#ffe7a3" opacity=".75"/>
+</svg>`;
+const BASE_SVG = `<svg class="flag" viewBox="0 0 40 40" aria-hidden="true"><ellipse cx="20" cy="33" rx="16" ry="4" fill="#48e5d6" opacity=".25"/><path d="M6 32 A14 14 0 0 1 34 32 Z" fill="#dcf3f1"/><path d="M6 32 A14 14 0 0 1 34 32" fill="none" stroke="#48e5d6" stroke-width="2.5"/><circle cx="14" cy="26" r="2.2" fill="#0a3a50"/><circle cx="20" cy="23" r="2.2" fill="#0a3a50"/><circle cx="26" cy="26" r="2.2" fill="#0a3a50"/><line x1="20" y1="18" x2="20" y2="6" stroke="#84adb3" stroke-width="2"/><circle cx="20" cy="5" r="2.6" fill="#ff7b5c"/></svg>`;
+const JELLY_SVG = `<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M8 20 A12 12 0 0 1 32 20 Q28 23 24 20 Q20 23 16 20 Q12 23 8 20Z" fill="#e46cff" opacity=".9"/><g stroke="#e46cff" stroke-width="1.6" fill="none" opacity=".8"><path d="M12 22 q-2 5 0 10"/><path d="M18 22 q2 5 0 12"/><path d="M24 22 q-2 5 0 11"/><path d="M29 22 q2 4 0 9"/></g><circle cx="16" cy="14" r="2" fill="#fff" opacity=".7"/></svg>`;
+const EEL_SVG = `<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M6 24 Q12 12 20 20 T34 16" stroke="#9dff7a" stroke-width="7" fill="none" stroke-linecap="round"/><circle cx="33" cy="15" r="2" fill="#03141e"/><path d="M14 16 l2 -4 M22 22 l2 4 M26 15 l1 -4" stroke="#ffe066" stroke-width="1.6"/></svg>`;
+const ROT = { L:0, S:90, O:180, N:-90 };
+let B = {};
+function cellSize(map){
+  const stage = $("#stage"); const w = map.grid[0].length, h = map.grid.length;
+  const avail = stage.clientWidth - 20;
+  const maxH = isPhone() ? window.innerHeight*0.5 : window.innerHeight*0.6;
+  return Math.max(14, Math.min(52, Math.floor(avail / w), Math.floor(maxH / h)));
+}
+function cellHtml(ch, x, y){
+  if (ch === "#") return `<div class="cell r v${(x*7+y*3)%3+1}" data-c="${x},${y}"></div>`;
+  let inner = "";
+  if (ch === "@") inner = BASE_SVG;
+  else if (ch === "$") inner = `<span class="gem" data-k="${x},${y}"></span>`;
+  else if (ch === "o") inner = `<span class="bub"><i></i><i></i><i></i></span>`;
+  else if (ch in CORRENTES) inner = `<span class="cur" style="--r:${ROT[CORRENTES[ch]]}deg"><span>›</span></span>`;
+  else if (ch >= "a" && ch <= "c") inner = `<span class="kk" style="--k:var(--key-${ch})" data-key="${x},${y}">${ch}</span>`;
+  else if (ch >= "A" && ch <= "C") inner = `<span class="door" style="--k:var(--key-${ch.toLowerCase()})" data-door="${ch.toLowerCase()}"><b>${ch}</b></span>`;
+  else if (ch === "X") inner = `<span class="jelly" style="left:0;top:0">${JELLY_SVG}</span>`;
+  return `<div class="cell w ${(x+y)%2?"alt":""}" data-c="${x},${y}">${inner}</div>`;
+}
+function resetBoard(){
+  const m = MISSOES[cur], caso = m.casos[shownMap], board = $("#board");
+  $("#stage").querySelector(".overlay")?.remove();
+  $("#out").textContent = ""; $("#note").textContent = caso.nota || "";
+  if (!caso.map){
+    board.style.gridTemplateColumns = ""; B = { semMapa: true };
+    board.innerHTML = `<div class="dados"><span class="lbl">Dados do teste</span>${caso.mostra || ""}</div>`;
+    $("#bstatus").innerHTML = `Bancada de testes`;
+    return;
+  }
+  const sim = new Sim(caso.map, Object.assign({}, m.cfg || {}, caso.cfg || {}));
+  const c = cellSize(caso.map);
+  board.style.setProperty("--c", c+"px"); board.style.setProperty("--spd", speed+"ms");
+  board.style.gridTemplateColumns = `repeat(${sim.w}, ${c}px)`;
+  let html = "";
+  sim.grid.forEach((row,y)=>row.forEach((ch,x)=>{ html += cellHtml(ch, x, y); }));
+  sim.posCriaturas().forEach((p,k)=>{ html += `<div class="eel" data-e="${k}">${EEL_SVG}</div>`; });
+  html += `<div class="robot" id="robot">${SUB_SVG}</div>`;
+  board.innerHTML = html;
+  B = { c, x:sim.x, y:sim.y, dir:"L", total:sim.total, got:0, ticks:0, o2:sim.o2, o2max:sim.o2max, chaves:[], analise: !!m.analise };
+  $("#robot").hidden = !!m.analise;
+  placeRobot(true); placeEels(sim.posCriaturas(), true);
+  status();
+}
+function highlight(cells){ for (const [x, y] of cells || []){ const el = $(`[data-c="${x},${y}"]`); if (el && !el.querySelector(".hl")) el.insertAdjacentHTML("beforeend", `<span class="hl"></span>`); } }
+function colorirCamaras(grid){
+  const seen = new Set(); let n = 0;
+  grid.forEach((row, y) => [...row].forEach((ch, x) => {
+    if (ch === "#" || seen.has(x+","+y)) return;
+    const hue = (n++ * 67 + 170) % 360; const st = [[x, y]]; seen.add(x+","+y);
+    while (st.length){ const [a, b] = st.pop(); const el = $(`[data-c="${a},${b}"]`); if (el) el.style.background = `hsl(${hue} 55% 30%)`;
+      for (const [p, q] of vizinhos4(grid, a, b)) if (grid[q][p] !== "#" && !seen.has(p+","+q)){ seen.add(p+","+q); st.push([p, q]); } }
+  }));
+}
+function placeRobot(instant){
+  const r = $("#robot"); if (!r) return;
+  if (instant){ r.style.transition = "none"; r.querySelector("svg").style.transition = "none"; }
+  r.style.transform = `translate(${B.x*B.c}px, ${B.y*B.c}px)`;
+  const t = B.dir === "O" ? "scaleX(-1)" : B.dir === "N" ? "rotate(-90deg)" : B.dir === "S" ? "rotate(90deg)" : "none";
+  r.querySelector("svg").style.transform = t;
+  if (instant){ r.offsetHeight; r.style.transition = ""; r.querySelector("svg").style.transition = ""; }
+}
+function placeEels(pos, instant){
+  pos.forEach(([x, y], k) => { const e = $(`.eel[data-e="${k}"]`); if (!e) return; if (instant) e.style.transition = "none"; e.style.transform = `translate(${x*B.c}px, ${y*B.c}px)`; if (instant){ e.offsetHeight; e.style.transition = ""; } });
+}
+function status(){
+  if (B.semMapa) return;
+  if (B.analise){ $("#bstatus").innerHTML = `Análise do mapa`; return; }
+  const pct = B.o2max ? Math.round(B.o2/B.o2max*100) : 0;
+  $("#bstatus").innerHTML = `${B.total ? `Tesouros <b>${B.got}/${B.total}</b> · ` : ""}Turnos <b>${B.ticks}</b>${B.o2max ? ` · <span class="o2 ${pct<=30?"low":""}">O₂ <i style="--b:${pct}%"></i> <b>${B.o2}</b></span>` : ""}${B.chaves.length ? ` · Chaves <b>${B.chaves.join(" ")}</b>` : ""}`;
+}
+const wait = ms => new Promise(r=>setTimeout(r, ms));
+function boom(x, y){ const b = document.createElement("div"); b.className="boom"; b.style.left = x*B.c+"px"; b.style.top = y*B.c+"px"; $("#board").appendChild(b); }
+function shake(){ const r = $("#robot"); r.classList.remove("crash"); r.offsetHeight; r.classList.add("crash"); }
+async function animate(trace){
+  $("#board").style.setProperty("--spd", speed+"ms");
+  const r = $("#robot");
+  for (const ev of trace){
+    if (abort) return false;
+    let pausa = speed;
+    if (ev.t==="move"){ B.x = ev.x; B.y = ev.y; B.dir = DNOME[ev.d]; B.ticks++; if (ev.o2 !== undefined && B.o2max) B.o2 = ev.o2; placeRobot(); }
+    else if (ev.t==="push"){ B.x = ev.x; B.y = ev.y; placeRobot(); }
+    else if (ev.t==="pick"){ const g = $(`.gem[data-k="${ev.x},${ev.y}"]`); if (g) g.classList.add("got"); B.got++; pausa = speed*0.4; }
+    else if (ev.t==="key"){ const k = $(`.kk[data-key="${ev.x},${ev.y}"]`); if (k) k.classList.add("got"); B.chaves.push(ev.k); document.querySelectorAll(`.door[data-door="${ev.k}"]`).forEach(d=>d.classList.add("open")); pausa = speed*0.5; }
+    else if (ev.t==="wait"){ B.ticks++; pausa = speed*0.8; }
+    else if (ev.t==="bump"){ B.ticks++; B.dir = DNOME[ev.d]; placeRobot(); shake(); }
+    else if (ev.t==="breath"){ B.o2 = ev.o2; B.ticks++; r.classList.add("breath"); setTimeout(()=>r.classList.remove("breath"), 500); }
+    else if (ev.t==="cri"){ placeEels(ev.pos); continue; }
+    else if (ev.t==="crash"){ B.dir = DNOME[ev.d]; placeRobot(); shake(); boom(ev.x, ev.y); }
+    else if (ev.t==="hit"){ shake(); boom(B.x, B.y); }
+    else if (ev.t==="empty"){ shake(); }
+    status();
+    await wait(pausa);
+  }
+  return true;
+}
+
+/* ---------------- execução ---------------- */
+function explain(err){
+  const line = err.line ? ` (linha ${err.line})` : "";
+  if (err.kind === "compile"){
+    if (!err.cls) return { msg: err.msg, hint: "A estação procura funções e classes pelo nome exato pedido na tarefa." };
+    let hint = "Confira os dois-pontos no fim de def, if, for, while e class, os parênteses e a indentação (4 espaços por nível).";
+    if (/Indentation/.test(err.cls)) hint = "A indentação não bate: cada bloco usa 4 espaços a mais que a linha de cima, e linhas do mesmo bloco ficam alinhadas.";
+    return { msg: `Erro de sintaxe${line}: ${err.texto}`, hint };
+  }
+  if (err.kind === "exception"){
+    let hint = "Uma exceção escapou do seu código sem ser tratada.";
+    if (err.cls === "NameError") hint = "Você usou um nome que não existe (ainda). Confira a grafia e se a variável foi criada antes.";
+    else if (err.cls === "IndexError") hint = "Você acessou uma posição fora da lista ou da string. Lembre que o último índice é len(x) - 1.";
+    else if (err.cls === "KeyError") hint = "Você leu uma chave que não está no dicionário. Use if chave in d, ou d.get(chave, padrão).";
+    else if (err.cls === "TypeError") hint = "Algum valor é de um tipo diferente do esperado (por exemplo, somar texto com número, ou chamar uma função com argumentos a mais ou a menos).";
+    else if (err.cls === "AttributeError") hint = "O objeto não tem esse atributo ou método. Confira a grafia e se ele foi criado no __init__ com self.";
+    else if (err.cls === "ValueError") hint = "Um valor tem o tipo certo mas o conteúdo errado, como int('dois'). Trate com try/except ValueError.";
+    else if (err.cls === "RecursionError") hint = "A recursão não parou. Confira o caso base e se as casas visitadas estão sendo marcadas.";
+    else if (err.cls === "ZeroDivisionError") hint = "Houve uma divisão por zero.";
+    return { msg: err.texto + line, hint };
+  }
+  if (err.kind === "timeout") return { msg: "O código demorou demais e o ARGO interrompeu.", hint: "Algum laço nunca termina, ou o algoritmo testa combinações demais." };
+  return { msg: err.msg, hint: "" };
+}
+async function runAll(){
+  if (!ready || running) return;
+  const m = MISSOES[cur], code = codeEl.value;
+  codeEl.blur(); fbEl.innerHTML = "";
+  for (const r of (m.require||[])) if (!(r.test ? r.test(code) : r.re.test(code))) return fail(r.msg);
+  for (const r of (m.forbid||[])) if (r.re.test(code)) return fail(r.msg);
+  running = true; abort = false; attempts++;
+  const myRun = ++runId;
+  $("#run").hidden = true; $("#stop").hidden = false;
+  mapStatus = m.casos.map(()=>null); renderMaps();
+  if (isPhone()) $(".boardcard").scrollIntoView({behavior:"smooth", block:"start"});
+  let allOk = true;
+  for (let k = 0; k < m.casos.length; k++){
+    shownMap = k; renderMaps(); resetBoard();
+    if (k>0) await wait(300);
+    await wait(30);
+    if (myRun !== runId) return;
+    const { sim, out, err, res } = rodar(m, k, code, 7 + k);
+    if (err && err.kind === "compile"){ allOk = false; const { msg, hint } = explain(err); mapStatus[k] = false; renderMaps(); fail(msg, hint); break; }
+    const done = sim ? await animate(sim.trace) : true;
+    if (myRun !== runId) return;
+    $("#out").textContent = out.trim();
+    if (!done){ allOk = false; fbEl.innerHTML = `<div class="feedback bad"><b>Missão abortada</b>Ajuste o código e envie de novo.</div>`; break; }
+    if (err){ const { msg, hint } = explain(err); mapStatus[k] = false; renderMaps(); allOk = false; fail(`${m.casos.length>1?`${casoLabel(m,k)}: `:""}${msg}`, hint); break; }
+    if (res && res.destaque) highlight(res.destaque);
+    if (!res || !res.ok){ mapStatus[k] = false; renderMaps(); allOk = false; fail(`${m.casos.length>1?`${casoLabel(m,k)}: `:""}${res ? res.msg : "a estação não recebeu resposta"}`, k>0 && m.piloto ? "Funcionou num cenário mas não em outro: o piloto precisa servir para qualquer túnel." : ""); break; }
+    if (res.camaras) colorirCamaras(m.casos[k].map.grid);
+    if (res.nota) $("#note").textContent = res.nota;
+    mapStatus[k] = true; renderMaps();
+    await wait(sim && sim.trace.length ? 250 : Math.max(700, speed*5));
+  }
+  running = false; $("#run").hidden = false; $("#stop").hidden = true;
+  if (allOk) win(m, code);
+}
+function stopRun(){ abort = true; running = false; runId++; }
+function win(m, code){
+  const n = starsFor(m, code), lines = linhasDeCodigo(code);
+  const best = Math.max(stars[m.id]||0, n); stars[m.id] = best; store.set("stars", stars); updateStarCount();
+  const last = cur === MISSOES.length-1;
+  const ov = document.createElement("div"); ov.className = "overlay";
+  ov.innerHTML = `<div class="win" role="dialog" aria-label="Missão concluída"><b>${last?"O Aurora é nosso!":"Missão cumprida!"}</b><div class="stars">${starsHtml(n)}</div>
+    <span>${lines} linhas de código · meta para 3 estrelas: ${m.par}</span>
+    ${n<3?`<span style="color:var(--ink-soft);font-size:.88rem">Funciona! Dá para deixar mais enxuto?</span>`:""}
+    <div class="row">${last?`<button class="btn primary" data-lv>Ver missões</button>`:`<button class="btn primary" data-next>Próxima missão →</button>`}<button class="btn" data-stay>Ficar aqui</button></div></div>`;
+  $("#stage").appendChild(ov);
+  const nx = ov.querySelector("[data-next]"); if (nx) nx.onclick = ()=>openLevel(cur+1);
+  const lv = ov.querySelector("[data-lv]"); if (lv) lv.onclick = showLevels;
+  ov.querySelector("[data-stay]").onclick = ()=>ov.remove();
+  fbEl.innerHTML = `<div class="feedback ok"><b>Missão concluída com ${n} estrela${n>1?"s":""}</b>${m.casos.length>1?`O código passou nos ${m.casos.length} ${m.casos[0].map?"cenários":"testes"}.`:"A estação aprovou o código."}</div>`;
+  $("#mission .goal").lastElementChild.innerHTML = `Melhor: <b style="color:var(--star)">${"★".repeat(best)}</b>`;
+}
+function fail(msg, hint){
+  const m = MISSOES[cur];
+  fbEl.innerHTML = `<div class="feedback bad"><b>Ainda não</b><span>${esc(msg)}</span>${hint?`<span style="color:var(--ink)">${esc(hint)}</span>`:""}
+    <div class="row"><button class="btn" data-hint>Ver dica</button>${attempts>=2?`<button class="btn" data-sol>Ver solução</button>`:""}</div><div data-extra></div></div>`;
+  fbEl.querySelector("[data-hint]").onclick = ()=> fbEl.querySelector("[data-extra]").innerHTML = `<div class="hint">${esc(m.hint)}</div>`;
+  const sb = fbEl.querySelector("[data-sol]");
+  if (sb) sb.onclick = ()=>{
+    const box = fbEl.querySelector("[data-extra]");
+    box.innerHTML = `<pre class="solution">${esc(m.solution)}</pre><div class="row" style="margin-top:6px"><button class="btn" data-use>Usar no editor</button></div>`;
+    box.querySelector("[data-use]").onclick = ()=>{ codeEl.value = m.solution; syncGutter(); saveCode(); };
+  };
+}
+
+/* ---------------- editor ---------------- */
+function syncGutter(){
+  if (!codeEl) return;
+  const n = codeEl.value.split("\n").length;
+  gutterEl.textContent = Array.from({length:n},(_,i)=>i+1).join("\n");
+  codeEl.style.height = "auto"; codeEl.style.height = codeEl.scrollHeight+"px";
+  const pw = codeEl.parentElement.clientWidth-42;
+  codeEl.style.width = "auto"; codeEl.style.width = Math.max(pw, codeEl.scrollWidth)+"px";
+}
+function insert(t, back=0){
+  codeEl.setRangeText(t, codeEl.selectionStart, codeEl.selectionEnd, "end");
+  if (back){ const p = codeEl.selectionStart-back; codeEl.setSelectionRange(p,p); }
+  codeEl.dispatchEvent(new Event("input"));
+}
+function newline(){
+  const v = codeEl.value, s = codeEl.selectionStart;
+  const line = v.slice(v.lastIndexOf("\n", s-1)+1, s);
+  let ind = line.match(/^ */)[0];
+  if (/:\s*(#.*)?$/.test(line)) ind += "    ";
+  insert("\n"+ind);
+}
+function dedent(){
+  const v = codeEl.value, s = codeEl.selectionStart, ls = v.lastIndexOf("\n", s-1)+1;
+  const sp = v.slice(ls).match(/^ {1,4}/);
+  if (sp){ codeEl.setRangeText("", ls, ls+sp[0].length, "end"); const p = Math.max(ls, s-sp[0].length); codeEl.setSelectionRange(p,p); codeEl.dispatchEvent(new Event("input")); }
+}
+function setupEditor(){
+  codeEl.addEventListener("input", ()=>{ syncGutter(); saveCode(); });
+  codeEl.addEventListener("keydown", e=>{
+    const v = codeEl.value, s = codeEl.selectionStart, en = codeEl.selectionEnd;
+    if ((e.ctrlKey||e.metaKey) && e.key==="Enter"){ e.preventDefault(); runAll(); return; }
+    if (e.key==="Tab"){ e.preventDefault(); e.shiftKey ? dedent() : insert("    "); return; }
+    if (e.key==="Enter" && !e.isComposing){ e.preventDefault(); newline(); return; }
+    if (e.key==="Backspace" && s===en){
+      const before = v.slice(v.lastIndexOf("\n", s-1)+1, s);
+      if (before.length && /^ +$/.test(before)){ e.preventDefault(); const k = (before.length-1)%4+1; codeEl.setRangeText("", s-k, s, "end"); codeEl.dispatchEvent(new Event("input")); }
+    }
+  });
+  syncGutter();
+}
+const KEYS = [["⇥","tab"],["⇤","dedent"],[":",":"],["( )","()",1],["[ ]","[]",1],["{ }","{}",1],["\" \"","\"\"",1],["_","_"],["=","="],["==","=="],["!=","!="],["+=","+="],[",",", "],[".","."],["self","self."],["return","return "],["yield","yield "],["for","for  in :",5],["if","if :",1],["def","def ():",3],["↵","enter"]];
+function setupKeys(){
+  const kb = $("#keys"); kb.innerHTML = "";
+  KEYS.forEach(([label,val,back])=>{
+    const b = document.createElement("button"); b.type="button"; b.textContent=label;
+    b.setAttribute("aria-label", val==="tab"?"Recuar":val==="dedent"?"Desfazer recuo":val==="enter"?"Nova linha":"Inserir "+val.trim());
+    b.addEventListener("pointerdown", e=>e.preventDefault());
+    b.onclick = ()=>{ if (document.activeElement!==codeEl) codeEl.focus();
+      if (val==="tab") insert("    "); else if (val==="dedent") dedent(); else if (val==="enter") newline(); else insert(val, back||0); };
+    kb.appendChild(b);
+  });
+}
+let lastW = window.innerWidth;
+window.addEventListener("resize", ()=>{
+  if (Math.abs(window.innerWidth - lastW) < 40) return;
+  lastW = window.innerWidth;
+  if (cur!==null && !running){ resetBoard(); syncGutter(); }
+});
+
+/* ---------------- carregar o Python ---------------- */
+function loadScript(src){ return new Promise((res, rej)=>{ const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); }); }
+async function loadEngine(){
+  for (const base of ["vendor/", "https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/"]){
+    try{ if (!window.Sk) await loadScript(base+"skulpt.min.js"); if (!(window.Sk && Sk.builtinFiles)) await loadScript(base+"skulpt-stdlib.js"); if (window.Sk && Sk.builtinFiles) return true; }catch(e){}
+  }
+  return false;
+}
+(async ()=>{
+  updateStarCount();
+  const c = store.get("cur", null);
+  if (c!==null && MISSOES[c] && unlocked(c)) openLevel(c); else showLevels();
+  ready = await loadEngine();
+  const eng = $("#engine"); if (eng) eng.textContent = ready ? "Python pronto" : "Python não carregou";
+  const run = $("#run"); if (run) run.disabled = !ready;
+  if (!ready && fbEl) fbEl.innerHTML = `<div class="feedback bad"><b>O Python não carregou</b>Confira a conexão com a internet e recarregue a página.</div>`;
+})();
+</script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
+}
+</script>
+</body>
+</html>
